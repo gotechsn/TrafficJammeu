@@ -56,7 +56,6 @@ public class DirectionsJSONParser {
 		}catch (Exception e){			
 		}
 		
-		
 		return routes;
 	}	
 	

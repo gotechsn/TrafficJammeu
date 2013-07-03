@@ -13,6 +13,7 @@ import java.util.List;
 import org.json.JSONObject;
 
 import android.app.Activity;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
@@ -283,8 +284,8 @@ public class MapActivity extends Activity implements OnMapLongClickListener {
 					
 					// Adding all the points in the route to LineOptions
 					lineOptions.addAll(points);
-					lineOptions.width(session.getDrawWidth());
-					lineOptions.color(session.getDrawColor());
+					lineOptions.width(5);
+					lineOptions.color(Color.parseColor("#99FF0000"));
 					
 				}
 				
