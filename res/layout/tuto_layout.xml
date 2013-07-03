@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/mainLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/transparent">
+    
+    
+    <Button 
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:text="@string/fermer"
+	    android:layout_alignParentBottom="true"
+	    android:layout_centerHorizontal="true"
+	    android:id="@+id/closeButton"
+        />
+    
+    <CheckBox 
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:checked="true"
+	    android:id="@+id/doNotShowAgain"
+	    android:layout_above="@id/closeButton"
+	    android:text="@string/doNotShowAgain"
+	    android:textColor="@android:color/white"
+	    android:layout_centerHorizontal="true"
+        />
+</RelativeLayout>
