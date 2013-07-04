@@ -13,7 +13,16 @@ import java.util.List;
 import org.json.JSONObject;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
 import android.graphics.Color;
+import android.graphics.Rect;
+import android.location.Criteria;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
@@ -21,25 +30,29 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesUtil;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.GoogleMap.OnMapLongClickListener;
+import com.google.android.gms.maps.GoogleMap.OnMarkerDragListener;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 
-public class MapActivity extends Activity implements OnMapLongClickListener {
+public class MapActivity extends Activity implements OnMapLongClickListener, LocationListener, OnMarkerDragListener{
 
-	static final LatLng HAMBURG = new LatLng(53.558, 9.927);
-	static final LatLng KIEL = new LatLng(53.551, 9.993);
 	private GoogleMap map;
 	private UiSettings mapSettings;
-	private ArrayList<LatLng> markerPoints;
+	private ArrayList<Marker> markers;
 	private SessionManager session;
 
     @Override
@@ -56,7 +69,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener {
 	public boolean configureMap() {
 		
 		map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
-		markerPoints = new ArrayList<LatLng>();
+		markers = new ArrayList<Marker>();
 		boolean mReturn = false;
 		if (map != null) {
 			map.setMapType(GoogleMap.MAP_TYPE_HYBRID);
@@ -68,11 +81,43 @@ public class MapActivity extends Activity implements OnMapLongClickListener {
 			
 
 	        map.setOnMapLongClickListener(this);
+	        map.setOnMarkerDragListener(this);
 			mReturn = true;
 		}
 		return mReturn;
 	}
 
+	private void manageLocation() {
+		// TODO Auto-generated method stub
+		int status = GooglePlayServicesUtil.isGooglePlayServicesAvailable(getBaseContext());
+		// Showing status
+        if(status!=ConnectionResult.SUCCESS){ // Google Play Services are not available
+ 
+            int requestCode = 10;
+            Dialog dialog = GooglePlayServicesUtil.getErrorDialog(status, this, requestCode);
+            dialog.show();
+ 
+        }else { // Google Play Services are available
+ 
+            // Getting LocationManager object from System Service LOCATION_SERVICE
+            LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+ 
+            // Creating a criteria object to retrieve provider
+            Criteria criteria = new Criteria();
+ 
+            // Getting the name of the best provider
+            String provider = locationManager.getBestProvider(criteria, true);
+ 
+            // Getting Current Location
+            Location location = locationManager.getLastKnownLocation(provider);
+ 
+            if(location!=null){
+                onLocationChanged(location);
+            }
+            locationManager.requestLocationUpdates(provider, 20000, 0, this);
+        }
+	}
+	
 	public void manageTuto(){
 		if(!session.isTutoShown()){
         	LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
@@ -112,25 +157,71 @@ public class MapActivity extends Activity implements OnMapLongClickListener {
 			.snippet(snippet)
 			.position(position);
 		
-		markerPoints.add(position);
 		return markerOptions;
 	}
 	
 	@Override
-	public void onMapLongClick(LatLng point) {
+	public void onMapLongClick(LatLng position) {
 		// TODO Auto-generated method stub
-		map.addMarker(createMarkerOptions("test", "snippet", point, true));
 		
-		if(isOdd(markerPoints.size())) {
-			if(markerPoints.size() != 0){
-				LatLng origin = markerPoints.get(markerPoints.size()-2);
-				LatLng dest = markerPoints.get(markerPoints.size()-1);
-				
-				String url = getDirectionsUrl(origin, dest);				
-				DownloadTask downloadTask = new DownloadTask();
-				downloadTask.execute(url);
-			}
+		final LatLng point = position;
+
+		Marker marker = map.addMarker(createMarkerOptions("test", "snippet", point, true));
+		markers.add(marker);
+		
+		if (isOdd(markers.size())) {
+
+			AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+
+			dialog.setTitle("Marquer ce trajet ?");
+			CharSequence[] csitems = new CharSequence[3];
+			csitems[0] = "Libre";
+			csitems[1] = "Normal";
+			csitems[2] = "Embouteillé";
+
+			dialog.setSingleChoiceItems(csitems, 0, new OnClickListener() {
+
+				private int alertType;
+
+				public void onClick(DialogInterface arg0, int pos) {
+					// TODO Auto-generated method stub
+					alertType = pos;
+					Log.i("SELECTED", String.valueOf(alertType));
+
+				}
+			});
+
+			dialog.setPositiveButton(android.R.string.ok,
+					new OnClickListener() {
+						public void onClick(DialogInterface dialog, int which) {
+							// l'index du dernier marker est ajouté avec la
+							// methode createMarkerOptions()
+							map.addMarker(createMarkerOptions("test",
+									"snippet", point, true));
+							drawBetween2LastPoints();
+						}
+					});
+			dialog.setNegativeButton(android.R.string.cancel,
+					new OnClickListener() {
+
+						public void onClick(DialogInterface dialog, int which) {
+							// on enleve le dernier marker
+							int removeIndex = markers.size() - 1;
+							Marker removeMarker = markers.get(removeIndex);
+							removeMarker.remove();
+							markers.remove(removeIndex);
+						}
+					});
+			dialog.create().show();
 		}
+	}
+	
+	public void drawBetween2LastPoints(){
+		LatLng origin = markers.get(markers.size() - 2).getPosition();
+		LatLng dest = markers.get(markers.size() - 1).getPosition();
+		String url = getDirectionsUrl(origin, dest);
+		DownloadTask downloadTask = new DownloadTask();
+		downloadTask.execute(url);
 	}
 	
 	public boolean isOdd(int size) {
@@ -155,8 +246,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener {
 		String output = "json";
 		
 		// Building the url to the web service
-		String url = "https://maps.googleapis.com/maps/api/directions/"+output+"?"+parameters;
-		
+		String url = "https://maps.googleapis.com/maps/api/directions/"+output+"?"+parameters; 
 		
 		return url;
 	}
@@ -199,8 +289,6 @@ public class MapActivity extends Activity implements OnMapLongClickListener {
         }
         return data;
      }
-
-	
 	
 	// Fetches data from url passed
 	private class DownloadTask extends AsyncTask<String, Void, String>{			
@@ -295,5 +383,75 @@ public class MapActivity extends Activity implements OnMapLongClickListener {
 				}
 			}
 		}			
-    }   
+    }
+
+	@Override
+	public void onLocationChanged(Location location) {
+		// TODO Auto-generated method stub
+		// Getting latitude of the current location
+        double latitude = location.getLatitude();
+ 
+        // Getting longitude of the current location
+        double longitude = location.getLongitude();
+ 
+        // Creating a LatLng object for the current location
+        LatLng latLng = new LatLng(latitude, longitude);
+ 
+        // Showing the current location in Google Map
+        map.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+ 
+        // Zoom in the Google Map
+        map.animateCamera(CameraUpdateFactory.zoomTo(15));
+		
+	}
+
+	@Override
+	public void onProviderDisabled(String provider) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onProviderEnabled(String provider) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onStatusChanged(String provider, int status, Bundle extras) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	// OnMarkerDrag methods
+	@Override
+	public void onMarkerDrag(Marker marker) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onMarkerDragEnd(Marker marker) {
+		// TODO Auto-generated method stub
+		ImageView deleteMarker = (ImageView) findViewById(R.id.deleteMarker);
+		
+//		marker.
+		Rect rect = deleteMarker.getDrawable().copyBounds();
+		deleteMarker.setVisibility(View.GONE);
+		
+		// in deleteMarker bouds
+		if(true) {
+			
+		} 
+		//else means that marker is moved. checkh if we redraw the route or note
+		else {
+			
+		}
+	}
+
+	@Override
+	public void onMarkerDragStart(Marker marker) {
+		// TODO Auto-generated method stub
+		findViewById(R.id.deleteMarker).setVisibility(View.VISIBLE);
+	}   
 }
