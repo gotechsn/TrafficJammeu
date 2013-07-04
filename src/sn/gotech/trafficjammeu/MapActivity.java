@@ -12,6 +12,7 @@ import java.util.List;
 
 import org.json.JSONObject;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -26,12 +27,18 @@ import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -50,6 +57,8 @@ import com.google.android.gms.maps.model.PolylineOptions;
 
 public class MapActivity extends Activity implements OnMapLongClickListener, LocationListener, OnMarkerDragListener{
 
+	private static final String MAP_VIEW_TYPE_SELECTED = "map_type_selected";
+	private static final float MIN_ZOOM_LEVEL_FOR_MARKING = 13.0f;
 	private GoogleMap map;
 	private UiSettings mapSettings;
 	private ArrayList<Marker> markers;
@@ -64,6 +73,123 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
         manageUserInfo();
         manageTuto();
         configureMap();
+        manageLocation();
+    }
+    
+	@Override
+	public void onRestoreInstanceState(Bundle savedInstanceState) {
+		// Restore the previously serialized current tab position.
+		if (savedInstanceState.containsKey(MAP_VIEW_TYPE_SELECTED)) {
+			map.setMapType(savedInstanceState.getInt(MAP_VIEW_TYPE_SELECTED));
+		}
+	}
+
+	@Override
+	public void onSaveInstanceState(Bundle outState) {
+		// Serialize the current tab position.
+		outState.putInt(MAP_VIEW_TYPE_SELECTED, map.getMapType());
+	}
+    
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+    	// TODO Auto-generated method stub
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.main, menu);
+		
+		ActionBar actionBar = getActionBar();
+//		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
+		actionBar.setDisplayHomeAsUpEnabled(true);
+    	return super.onCreateOptionsMenu(menu);
+    }
+    
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+    	// TODO Auto-generated method stub
+    	switch (item.getItemId()) {
+		case android.R.id.home:
+			onBackPressed();
+			break;
+
+		case R.id.action_info:
+			showTuto();
+			break;
+			
+		case R.id.action_change_view:
+			changeMapType();
+			break;
+		default:
+			break;
+		}
+    	return super.onOptionsItemSelected(item);
+    }
+    
+    public void changeMapType(){
+    	
+    	int type = map.getMapType(); 
+    	Toast toast = new Toast(this);
+    	
+    	switch (type) {
+		case GoogleMap.MAP_TYPE_NORMAL:
+			map.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+			toast = getCustomToast(R.string.mapTypeSatellite);
+			break;
+		case GoogleMap.MAP_TYPE_SATELLITE:
+			map.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
+			toast = getCustomToast(R.string.mapTypeStreet);
+			break;
+		case GoogleMap.MAP_TYPE_TERRAIN:
+			map.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+			toast = getCustomToast(R.string.mapTypeHybrid);
+			break;
+		case GoogleMap.MAP_TYPE_HYBRID:
+			map.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+			toast = getCustomToast(R.string.mapTypeNormal);
+			break;
+
+		default:
+			break;
+		}
+    	toast.show();
+    }
+    
+    public Toast getCustomToast(int stringResourceId){
+    
+    	LayoutInflater inflater = getLayoutInflater();
+   	 
+		View layout = inflater.inflate(R.layout.custom_toast,
+		  (ViewGroup) findViewById(R.id.custom_toast_layout_id));
+
+		// set a message
+		TextView text = (TextView) layout.findViewById(R.id.text);
+		text.setText(stringResourceId);
+
+		// Toast...
+		Toast toast = new Toast(getApplicationContext());
+		toast.setGravity(Gravity.CENTER_VERTICAL|Gravity.CENTER_HORIZONTAL, 0, 0);
+		toast.setDuration(Toast.LENGTH_SHORT);
+		toast.setView(layout);
+		
+		return toast;
+    }
+    
+    public Toast getCustomToast(String string){
+        
+    	LayoutInflater inflater = getLayoutInflater();
+   	 
+		View layout = inflater.inflate(R.layout.custom_toast,
+		  (ViewGroup) findViewById(R.id.custom_toast_layout_id));
+
+		// set a message
+		TextView text = (TextView) layout.findViewById(R.id.text);
+		text.setText(string);
+
+		// Toast...
+		Toast toast = new Toast(getApplicationContext());
+		toast.setGravity(Gravity.CENTER_VERTICAL|Gravity.CENTER_HORIZONTAL, 0, 0);
+		toast.setDuration(Toast.LENGTH_SHORT);
+		toast.setView(layout);
+		
+		return toast;
     }
     
 	public boolean configureMap() {
@@ -73,15 +199,17 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		boolean mReturn = false;
 		if (map != null) {
 			map.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+			
 			mapSettings = map.getUiSettings();
 			mapSettings.setCompassEnabled(true);
 			mapSettings.setRotateGesturesEnabled(true);
 			mapSettings.setZoomControlsEnabled(true);
-			map.setMyLocationEnabled(true);
-			
 
+	        map.animateCamera(CameraUpdateFactory.zoomTo(MIN_ZOOM_LEVEL_FOR_MARKING));
+			map.setMyLocationEnabled(true); 
 	        map.setOnMapLongClickListener(this);
 	        map.setOnMarkerDragListener(this);
+	        
 			mReturn = true;
 		}
 		return mReturn;
@@ -120,32 +248,37 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 	
 	public void manageTuto(){
 		if(!session.isTutoShown()){
-        	LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
-        	View view = inflater.inflate(R.layout.tuto_layout, null);
-        	final LinearLayout ll = (LinearLayout) findViewById(R.id.mainLayout);
-        	ll.addView(view);
-        	ll.setVisibility(View.VISIBLE);
-        	
-        	Button closeButton = (Button) view.findViewById(R.id.closeButton);
-        	final CheckBox checkBox = (CheckBox) view.findViewById(R.id.doNotShowAgain);
-        	
-        	closeButton.setOnClickListener(new View.OnClickListener() {
-				
-				@Override
-				public void onClick(View v) {
-					// TODO Auto-generated method stub
-					ll.setVisibility(View.GONE);
-					if(checkBox.isChecked()) {
-		        		session.setTutoShown(true);
-		        	}
-				}
-			});
+        	showTuto();
         }
 	}
 	
+	public void showTuto(){
+		LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
+    	View view = inflater.inflate(R.layout.tuto_layout, null);
+    	final LinearLayout ll = (LinearLayout) findViewById(R.id.mainLayout);
+    	ll.addView(view);
+    	ll.setVisibility(View.VISIBLE);
+    	
+    	Button closeButton = (Button) view.findViewById(R.id.closeButton);
+    	final CheckBox checkBox = (CheckBox) view.findViewById(R.id.doNotShowAgain);
+    	
+    	closeButton.setOnClickListener(new View.OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				ll.setVisibility(View.GONE);
+				if(checkBox.isChecked()) {
+	        		session.setTutoShown(true);
+	        	} else {
+	        		session.setTutoShown(false);
+	        	}
+			}
+		});
+	}
 	public void manageUserInfo(){
 		if(!session.hasUID()){
-			Toast.makeText(this, "set user info huna", 5000).show();
+			
 		}
 	}
 	
@@ -163,56 +296,59 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 	@Override
 	public void onMapLongClick(LatLng position) {
 		// TODO Auto-generated method stub
-		
-		final LatLng point = position;
+		if(map.getCameraPosition().zoom <= MIN_ZOOM_LEVEL_FOR_MARKING){
+			Toast toast = getCustomToast("Zoomez encore " + Math.round(MIN_ZOOM_LEVEL_FOR_MARKING - map.getCameraPosition().zoom) + " fois pour pouvoir marquer des routes");
+			toast.show();
+		} else {
 
-		Marker marker = map.addMarker(createMarkerOptions("test", "snippet", point, true));
-		markers.add(marker);
-		
-		if (isOdd(markers.size())) {
+			final LatLng point = position;
 
-			AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+			Marker marker = map.addMarker(createMarkerOptions("test", "snippet", point, true));
+			markers.add(marker);
+			
+			if (isOdd(markers.size())) {
 
-			dialog.setTitle("Marquer ce trajet ?");
-			CharSequence[] csitems = new CharSequence[3];
-			csitems[0] = "Libre";
-			csitems[1] = "Normal";
-			csitems[2] = "Embouteillé";
+				AlertDialog.Builder dialog = new AlertDialog.Builder(this);
 
-			dialog.setSingleChoiceItems(csitems, 0, new OnClickListener() {
+				dialog.setTitle("Marquer ce trajet ?");
+				CharSequence[] csitems = new CharSequence[3];
+				csitems[0] = "Libre";
+				csitems[1] = "Normal";
+				csitems[2] = "Embouteillé";
 
-				private int alertType;
+				dialog.setSingleChoiceItems(csitems, 0, new OnClickListener() {
 
-				public void onClick(DialogInterface arg0, int pos) {
-					// TODO Auto-generated method stub
-					alertType = pos;
-					Log.i("SELECTED", String.valueOf(alertType));
+					private int alertType;
 
-				}
-			});
+					public void onClick(DialogInterface arg0, int pos) {
+						// TODO Auto-generated method stub
+						alertType = pos;
+						Log.i("SELECTED", String.valueOf(alertType));
 
-			dialog.setPositiveButton(android.R.string.ok,
-					new OnClickListener() {
-						public void onClick(DialogInterface dialog, int which) {
-							// l'index du dernier marker est ajouté avec la
-							// methode createMarkerOptions()
-							map.addMarker(createMarkerOptions("test",
-									"snippet", point, true));
-							drawBetween2LastPoints();
-						}
-					});
-			dialog.setNegativeButton(android.R.string.cancel,
-					new OnClickListener() {
+					}
+				});
 
-						public void onClick(DialogInterface dialog, int which) {
-							// on enleve le dernier marker
-							int removeIndex = markers.size() - 1;
-							Marker removeMarker = markers.get(removeIndex);
-							removeMarker.remove();
-							markers.remove(removeIndex);
-						}
-					});
-			dialog.create().show();
+				dialog.setPositiveButton(android.R.string.ok,
+						new OnClickListener() {
+							public void onClick(DialogInterface dialog, int which) {
+								map.addMarker(createMarkerOptions("test",
+										"snippet", point, true));
+								drawBetween2LastPoints();
+							}
+						});
+				dialog.setNegativeButton(android.R.string.cancel,
+						new OnClickListener() {
+
+							public void onClick(DialogInterface dialog, int which) {
+								// on enleve le dernier marker
+								int removeIndex = markers.size() - 1;
+								Marker removeMarker = markers.get(removeIndex);
+								removeMarker.remove();
+								markers.remove(removeIndex);
+							}
+						});
+				dialog.create().show();
+			}
 		}
 	}
 	
@@ -372,8 +508,8 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 					
 					// Adding all the points in the route to LineOptions
 					lineOptions.addAll(points);
-					lineOptions.width(5);
-					lineOptions.color(Color.parseColor("#99FF0000"));
+					lineOptions.width(7);
+					lineOptions.color(Color.argb(125, 255, 0, 0));
 					
 				}
 				
@@ -447,6 +583,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		else {
 			
 		}
+		
 	}
 
 	@Override

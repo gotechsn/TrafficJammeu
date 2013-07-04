@@ -11,5 +11,9 @@
     <string name="title_section3">Section 3</string>
     <string name="fermer">Fermer</string>
     <string name="doNotShowAgain">Ne plus afficher cette page</string>
-
+	<string name="mapTypeNormal">Vue Plan</string>
+	<string name="mapTypeSatellite">Vue Satellite</string>
+	<string name="mapTypeHybrid">Vue Hybride</string>
+	<string name="mapTypeStreet">Vue Terrain</string>
+	<string name="minZoomForMarking">Vous devez zoomer encore </string>
 </resources>
