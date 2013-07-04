@@ -15,7 +15,7 @@ public class SessionManager {
     Context context;
      
     private static final String PREF_NAME = "trafficJammeuPreferences";
-    private static final int DEFAULT_ZOOM_SIZE = 17;
+    private static final float DEFAULT_ZOOM_SIZE = 13.0f;
     private static final float DEFAULT_DRAW_WIDTH = 7;
     private static final int DEFAULT_DRAW_COLOR = Color.BLUE;
     public static final String KEY_UID = "uid";
@@ -29,6 +29,9 @@ public class SessionManager {
 	private static final String KEY_DRAW_WIDTH = "draw_width";
 	private static final int DEFAULT_VIEW_TYPE = GoogleMap.MAP_TYPE_NORMAL;
 	private static final String KEY_TUTO_SHOWN = "tuto_shown";
+	private static final String KEY_NAME = "name";
+	private static final String KEY_USERNAME = "username";
+	private static final String KEY_EMAIL = "email";
     private static String IS_SESSION_ACTIVED = "is_session_active";
     private static int PRIVATE_MODE = 0;
 
@@ -39,11 +42,23 @@ public class SessionManager {
         editor = pref.edit();
     }
 
-    public void createSession(){
-
+    public void createSession(String username, String name, String email){
         editor.putBoolean(IS_SESSION_ACTIVED, true);
         editor.putString(KEY_UID, generateID());
+        editor.putString(KEY_NAME, name);
+        editor.putString(KEY_USERNAME, username);
+        editor.putString(KEY_EMAIL, email);
         editor.commit();
+    }
+    
+
+    public String getName() {
+    	return pref.getString(KEY_NAME, "default");
+    }
+    
+
+    public String getUsername() {
+    	return pref.getString(KEY_USERNAME, "default");
     }
     
     public boolean isTutoShown(){
@@ -70,8 +85,8 @@ public class SessionManager {
     	editor.commit();
     }
     
-    public int getZoomSize() {
-    	return pref.getInt(KEY_ZOOM_SIZE, DEFAULT_ZOOM_SIZE);
+    public float getZoomSize() {
+    	return pref.getFloat(KEY_ZOOM_SIZE, DEFAULT_ZOOM_SIZE);
     }
     
     public void setDrawWidth(float width) {

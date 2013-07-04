@@ -4,18 +4,21 @@
         android:icon="@drawable/ic_menu_refresh"
         android:id="@+id/action_refresh"
         android:showAsAction="ifRoom"
+        android:title="@string/app_name"
         />
    
     <item
         android:icon="@drawable/ic_map"
         android:id="@+id/action_change_view"
         android:showAsAction="ifRoom"
+        android:title="@string/app_name"
         />
     
     <item
         android:icon="@android:drawable/ic_menu_info_details"
         android:id="@+id/action_info"
         android:showAsAction="ifRoom"
+        android:title="@string/app_name"
         />
         
 </menu>
