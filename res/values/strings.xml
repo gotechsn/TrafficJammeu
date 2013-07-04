@@ -1,21 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">TrafficJammeu</string> 
-    <string name="action_settings">Settings</string> 
+    <string name="app_name">TrafficJammeu</string>
+    <string name="ouw">Ousmane est vraiment nul!</string>
+    <string name="action_settings">Settings</string>
     <string name="hello_world">Hello world!</string>
     <string name="soul">Soul est vraiment nul!</string>
-     <string name="ouw">Ousmane est vraiment nul!</string> 
     <string name="title_section1">Section 1</string>
     <string name="title_section2">Section 2</string>
-    <string name="title_section3">Section 3</string> 
-    <string name="action_settings">Settings</string> 
-    <string name="hello_world">Hello world!</string>
-    <string name="soul">Soul est vraiment nul!</string> 
-    <string name="title_section1">Section 1</string>
-    <string name="title_section2">Section 2</string>
-    <string name="title_section3">Section 3</string> 
+    <string name="title_section3">Section 3</string>
     <string name="fermer">Fermer</string>
-    <string name="doNotShowAgain">Ne plus afficher cette page</string>  
+    <string name="doNotShowAgain">Ne plus afficher cette page</string>
 
 </resources>
