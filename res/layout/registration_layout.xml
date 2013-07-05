@@ -14,7 +14,7 @@
             android:paddingTop="10dp"
             android:text="@string/title"
             android:textColor="@android:color/white"
-            android:textSize="20sp"
+            android:textSize="@dimen/titleSize"
             android:textStyle="bold" />
 
         <EditText

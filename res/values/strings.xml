@@ -21,4 +21,5 @@
 	<string name="email">Adresse email</string>
 	<string name="save">Enregistrer</string>
 	<string name="title">Infos utilisateur</string>
+	<string name="ccm">Comment ça marche ?</string>
 </resources>

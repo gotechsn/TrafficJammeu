@@ -51,6 +51,7 @@ import com.google.android.gms.maps.GoogleMap.OnMapLongClickListener;
 import com.google.android.gms.maps.GoogleMap.OnMarkerDragListener;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.UiSettings;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
@@ -70,7 +71,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 	private static final String ROUTE_NORMAL_STRING = "Normal";
 	private static final String ROUTE_FULL_STRING = "Embouteillé";
 	private static final int ROUTE_FREE_COLOR = Color.GREEN;
-	private static final int ROUTE_NORMAL_COLOR = Color.GRAY;
+	private static final int ROUTE_NORMAL_COLOR = Color.YELLOW;
 	private static final int ROUTE_FULL_COLOR = Color.RED;
 	private GoogleMap map;
 	private UiSettings mapSettings;
@@ -79,7 +80,6 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 	
 	private ArrayList<Polyline> polylines;
 	private int alertType;
-	private ArrayList<Integer> polylineDegrees;
 	private LatLng myPos;
 
     @Override
@@ -219,7 +219,6 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
 		markers = new ArrayList<Marker>();
 		polylines = new ArrayList<Polyline>();
-		polylineDegrees = new ArrayList<Integer>();
 		
 		boolean mReturn = false;
 		if (map != null) {
@@ -362,7 +361,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 
 			final LatLng point = position;
 
-			Marker marker = map.addMarker(createMarkerOptions("test", "snippet", point, true));
+			Marker marker = map.addMarker((new MarkerOptions()).position(point).draggable(true).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
 			markers.add(marker);
 			
 			if (isOdd(markers.size())) {
@@ -388,8 +387,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 				dialog.setPositiveButton(android.R.string.ok,
 						new OnClickListener() {
 							public void onClick(DialogInterface dialog, int which) {
-								map.addMarker(createMarkerOptions("note", "description \n\nPar: " + session.getUsername(), point, true));
-								drawBetween2LastPoints(getAlertColor(alertType));
+								drawBetween2LastPoints(getAlertColor(alertType), "title", "desc");
 							}
 						});
 				dialog.setNegativeButton(android.R.string.cancel,
@@ -422,9 +420,38 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		}
 	}
 	
-	public void drawBetween2LastPoints(int color){
-		LatLng origin = markers.get(markers.size() - 2).getPosition();
-		LatLng dest = markers.get(markers.size() - 1).getPosition();
+	public void drawBetween2LastPoints(int color, String title, String snippet){
+		
+		Marker aMarker = markers.get(markers.size() - 2);
+		Marker bMarker = markers.get(markers.size() - 1);
+		
+		aMarker.setTitle("A: " + title);
+		aMarker.setSnippet(snippet);
+		aMarker.setIcon(BitmapDescriptorFactory.defaultMarker());
+		bMarker.setTitle("B: " + title);
+		bMarker.setSnippet(snippet);
+		
+		switch (color) {
+		case Color.RED:
+			aMarker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
+			bMarker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
+			break;
+		case Color.GREEN:
+			aMarker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
+			bMarker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
+			break;
+		case Color.YELLOW:
+			aMarker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW));
+			bMarker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW));
+			break;
+
+		default:
+			break;
+		}
+		
+		LatLng origin = aMarker.getPosition();
+		LatLng dest = bMarker.getPosition();
+		
 		String url = getDirectionsUrl(origin, dest);
 		DownloadTask downloadTask = new DownloadTask(color);
 		downloadTask.execute(url);
@@ -588,7 +615,8 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 				
 				// Drawing polyline in the Google Map for the i-th route
 				if(lineOptions != null){
-					addPolyline(map.addPolyline(lineOptions));
+					Polyline polyline = map.addPolyline(lineOptions);
+					polylines.add(polyline);
 				}
 			}
 		}
@@ -639,23 +667,30 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		deleteMarker.setVisibility(View.GONE);
 		
 		int index = markers.indexOf(marker);
-		if(isOdd(index)){
-			
+		if(isOdd(index)){ // mean that its a even number (1, 3, 4, ...)
+//			polylines.get(index / 2); // if markers size is odd, thus there is "markers.size / 2" polylines
 		} else {
-			polylines.get((index + 1)/ 2).remove();
+			drawBetween2LastPoints(getAlertColor(alertType), marker.getTitle(), marker.getSnippet());
 		}
-	}
-
+	} 
+	
 	@Override
 	public void onMarkerDragStart(Marker marker) {
 		// TODO Auto-generated method stub
 		findViewById(R.id.deleteMarker).setVisibility(View.VISIBLE);
 		
 		int index = markers.indexOf(marker);
-		if(isOdd(index)){
-			removePolyline(polylines.get(index / 2)); // if markers size is odd, thus there is "markers.size / 2" polylines
+				
+//		Toast.makeText(this, "is " + index + " odd "+isOdd(index), 5000).show();
+//		// if marker has odd index in the array, that means that marker number in the map is even
+		if(isOdd(index)){ // mean that its a even number (1, 3, 4, ...)
+			if(polylines.size() > (index+1)/2){
+				polylines.get((index+1)/2).remove();
+			}
 		} else {
-			removePolyline(polylines.get((index + 1)/ 2));
+			if(polylines.size() > index/2){
+				polylines.get(index / 2).remove();
+			}
 		}
 	}
 
@@ -665,21 +700,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		session.setAnimeToLat(""+position.target.latitude);
 		session.setAnimeToLng(""+position.target.longitude);
 	}   
-	
-	public void addPolyline(Polyline polyline){
-		polylines.add(polyline);
-		polylineDegrees.add(alertType);
-	}
-	
-	public void removePolyline(Polyline polyline){
-		int index = polylines.indexOf(polyline);
 		
-		if(polylines.size() >= index){
-			polylines.get(index).remove();
-			polylineDegrees.remove(index);
-		}
-	}
-	
 	public boolean isEmailValid(CharSequence email) {
 	   return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches();
 	}
