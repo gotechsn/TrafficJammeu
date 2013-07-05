@@ -120,7 +120,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		
 		ActionBar actionBar = getActionBar();
 //		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
-		actionBar.setDisplayHomeAsUpEnabled(true);
+		//actionBar.setDisplayHomeAsUpEnabled(true);
     	return super.onCreateOptionsMenu(menu);
     }
     
@@ -359,9 +359,19 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 			toast.show();
 		} else {
 
+			AlertDialog.Builder buildInfosMarker = new AlertDialog.Builder(MapActivity.this);
+			buildInfosMarker.setTitle("Infos sur ce point");
+			buildInfosMarker.setMessage("ajouter des infos sur ce point");
+			final EditText inputInfos = new EditText(this);
+			buildInfosMarker.setView(inputInfos);
+			buildInfosMarker.create().show();
 			final LatLng point = position;
+<<<<<<< HEAD
 
 			Marker marker = map.addMarker((new MarkerOptions()).position(point).draggable(true).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
+=======
+			Marker marker = map.addMarker(createMarkerOptions("test", "snippet", point, true));
+>>>>>>> 06299051038e8921cb801d40fa31111f4adb5d4c
 			markers.add(marker);
 			
 			if (isOdd(markers.size())) {
