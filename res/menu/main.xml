@@ -3,6 +3,7 @@
     <item
         android:icon="@drawable/ic_menu_refresh"
         android:id="@+id/action_refresh"
+<<<<<<< HEAD
         android:showAsAction="ifRoom|collapseActionView"
         android:title="@string/rafraichir"
         />
@@ -11,20 +12,34 @@
         android:id="@+id/action_mode_text"
         android:showAsAction="ifRoom|collapseActionView"
         android:title="@string/listeText"
+=======
+        android:showAsAction="ifRoom"
+        android:title="@string/app_name"
+>>>>>>> 66205c2872adfb6c71a9b6412e39ce23542449d0
         />
    
     <item
         android:icon="@drawable/ic_map"
         android:id="@+id/action_change_view"
+<<<<<<< HEAD
         android:showAsAction="ifRoom|collapseActionView"
         android:title="@string/changeMapType"
+=======
+        android:showAsAction="ifRoom"
+        android:title="@string/app_name"
+>>>>>>> 66205c2872adfb6c71a9b6412e39ce23542449d0
         />
     
     <item
         android:icon="@drawable/ic_infos"
         android:id="@+id/action_info"
+<<<<<<< HEAD
         android:showAsAction="ifRoom|collapseActionView"
         android:title="@string/infos"
+=======
+        android:showAsAction="ifRoom"
+        android:title="@string/app_name"
+>>>>>>> 66205c2872adfb6c71a9b6412e39ce23542449d0
         />
         
 </menu>

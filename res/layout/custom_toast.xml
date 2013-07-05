@@ -3,6 +3,7 @@
     android:id="@+id/custom_toast_layout_id"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
+    android:layout_gravity="center"
     android:background="@drawable/toast_layout_background"
     android:orientation="horizontal"
     android:padding="5dp" >
@@ -12,6 +13,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textColor="#FFF"
+        android:layout_gravity="center"
+        android:gravity="center"
         />
  
 </LinearLayout>

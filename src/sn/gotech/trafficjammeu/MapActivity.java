@@ -18,8 +18,8 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
+import android.content.Intent;
 import android.graphics.Color;
-import android.graphics.Rect;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
@@ -46,24 +46,41 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.GoogleMap.OnCameraChangeListener;
 import com.google.android.gms.maps.GoogleMap.OnMapLongClickListener;
 import com.google.android.gms.maps.GoogleMap.OnMarkerDragListener;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.UiSettings;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 
-public class MapActivity extends Activity implements OnMapLongClickListener, LocationListener, OnMarkerDragListener{
+public class MapActivity extends Activity implements OnMapLongClickListener, LocationListener, OnMarkerDragListener, OnCameraChangeListener{
 
 	private static final String MAP_VIEW_TYPE_SELECTED = "map_type_selected";
 	private static final float MIN_ZOOM_LEVEL_FOR_MARKING = 13.0f;
+	private static final int ROUTE_INDEX_FREE = 0;
+	private static final int ROUTE_INDEX_NORMAL = 1;
+	private static final int ROUTE_INDEX_FULL = 2;
+	private static final String ROUTE_FREE_STRING = "Libre";
+	private static final String ROUTE_NORMAL_STRING = "Normal";
+	private static final String ROUTE_FULL_STRING = "Embouteillé";
+	private static final int ROUTE_FREE_COLOR = Color.GREEN;
+	private static final int ROUTE_NORMAL_COLOR = Color.GRAY;
+	private static final int ROUTE_FULL_COLOR = Color.RED;
 	private GoogleMap map;
 	private UiSettings mapSettings;
 	private ArrayList<Marker> markers;
 	private SessionManager session;
+	
+	private ArrayList<Polyline> polylines;
+	private int alertType;
+	private ArrayList<Integer> polylineDegrees;
+	private LatLng myPos;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,10 +88,13 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
         setContentView(R.layout.map_fragment); 
         session = new SessionManager(getApplicationContext());
         
-        manageUserInfo();
-        manageTuto();
-        configureMap();
-        manageLocation();
+        if(!session.hasUID()){
+        	registerUser();
+        } else {
+        	manageTuto();
+            configureMap();
+            manageLocation();
+        }
     }
     
 	@Override
@@ -82,6 +102,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		// Restore the previously serialized current tab position.
 		if (savedInstanceState.containsKey(MAP_VIEW_TYPE_SELECTED)) {
 			map.setMapType(savedInstanceState.getInt(MAP_VIEW_TYPE_SELECTED));
+//			map.animateCamera(CameraUpdateFactory.)
 		}
 	}
 
@@ -197,19 +218,28 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		
 		map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
 		markers = new ArrayList<Marker>();
+		polylines = new ArrayList<Polyline>();
+		polylineDegrees = new ArrayList<Integer>();
+		
 		boolean mReturn = false;
 		if (map != null) {
 			map.setMapType(GoogleMap.MAP_TYPE_HYBRID);
-			
 			mapSettings = map.getUiSettings();
 			mapSettings.setCompassEnabled(true);
+			mapSettings.setTiltGesturesEnabled(true);
 			mapSettings.setRotateGesturesEnabled(true);
 			mapSettings.setZoomControlsEnabled(true);
-
-	        map.animateCamera(CameraUpdateFactory.zoomTo(MIN_ZOOM_LEVEL_FOR_MARKING));
-			map.setMyLocationEnabled(true); 
+			map.setMyLocationEnabled(true);
+			if(myPos != null){
+				map.animateCamera(CameraUpdateFactory.newLatLngZoom(myPos, session.getZoomSize()));
+			} else {
+				LatLng latLng = new LatLng(Double.parseDouble(session.getAnimeToLat()), Double.parseDouble(session.getAnimeToLng()));
+				map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, session.getZoomSize()));
+			}
+			
 	        map.setOnMapLongClickListener(this);
 	        map.setOnMarkerDragListener(this);
+	        map.setOnCameraChangeListener(this);
 	        
 			mReturn = true;
 		}
@@ -226,23 +256,20 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
             Dialog dialog = GooglePlayServicesUtil.getErrorDialog(status, this, requestCode);
             dialog.show();
  
-        }else { // Google Play Services are available
+        } else { // Google Play Services are available
  
-            // Getting LocationManager object from System Service LOCATION_SERVICE
             LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
  
-            // Creating a criteria object to retrieve provider
             Criteria criteria = new Criteria();
  
-            // Getting the name of the best provider
             String provider = locationManager.getBestProvider(criteria, true);
- 
-            // Getting Current Location
             Location location = locationManager.getLastKnownLocation(provider);
- 
-            if(location!=null){
-                onLocationChanged(location);
-            }
+
+			if (location != null) {
+				onLocationChanged(location);
+				myPos = new LatLng(location.getLatitude(), location.getLongitude());
+			}
+			
             locationManager.requestLocationUpdates(provider, 20000, 0, this);
         }
 	}
@@ -277,12 +304,44 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 			}
 		});
 	}
-	public void manageUserInfo(){
-		if(!session.hasUID()){
-			
-		}
-	}
 	
+	public void registerUser(){
+		LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
+    	View view = inflater.inflate(R.layout.registration_layout, null);
+    	final LinearLayout ll = (LinearLayout) findViewById(R.id.mainLayout);
+    	ll.addView(view);
+    	ll.setVisibility(View.VISIBLE);
+    	Button saveButton = (Button) view.findViewById(R.id.save);
+    	
+    	final EditText username = (EditText) view.findViewById(R.id.username);
+    	final EditText name = (EditText) view.findViewById(R.id.name);
+    	final EditText email = (EditText) view.findViewById(R.id.email);
+    	
+    	saveButton.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				String usernameString = username.getText().toString();
+				String nameString = name.getText().toString();
+				String emailString = email.getText().toString();
+				
+				if(!usernameString.isEmpty() && !nameString.isEmpty() && !emailString.isEmpty() && isEmailValid(emailString)){
+					ll.setVisibility(View.GONE);
+					session.createSession(
+							usernameString, 
+							nameString, 
+							emailString
+							);
+					Intent intent = new Intent(getApplicationContext(), MapActivity.class);
+					finish();
+					startActivity(intent);
+				} else {
+					Toast.makeText(MapActivity.this, "Veuillez bien remplir tous les champs !", Toast.LENGTH_LONG).show();
+				}
+			}
+		});
+	}
+		
 	public MarkerOptions createMarkerOptions(String title, String snippet, LatLng position, boolean draggable){
 		MarkerOptions markerOptions = new MarkerOptions();
 		markerOptions
@@ -290,14 +349,13 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 			.draggable(draggable)
 			.snippet(snippet)
 			.position(position);
-		
 		return markerOptions;
 	}
 	
 	@Override
 	public void onMapLongClick(LatLng position) {
 		// TODO Auto-generated method stub
-		if(map.getCameraPosition().zoom <= MIN_ZOOM_LEVEL_FOR_MARKING){
+		if(map.getCameraPosition().zoom < MIN_ZOOM_LEVEL_FOR_MARKING){
 			Toast toast = getCustomToast("Zoomez encore " + Math.round(MIN_ZOOM_LEVEL_FOR_MARKING - map.getCameraPosition().zoom) + " fois pour pouvoir marquer des routes");
 			toast.show();
 		} else {
@@ -313,18 +371,16 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 			markers.add(marker);
 			
 			if (isOdd(markers.size())) {
-
+				
 				AlertDialog.Builder dialog = new AlertDialog.Builder(this);
 
 				dialog.setTitle("Marquer ce trajet ?");
 				CharSequence[] csitems = new CharSequence[3];
-				csitems[0] = "Libre";
-				csitems[1] = "Normal";
-				csitems[2] = "Embouteillé";
-
-				dialog.setSingleChoiceItems(csitems, 0, new OnClickListener() {
-
-					private int alertType;
+				csitems[ROUTE_INDEX_FREE] = ROUTE_FREE_STRING;
+				csitems[ROUTE_INDEX_NORMAL] = ROUTE_NORMAL_STRING;
+				csitems[ROUTE_INDEX_FULL] = ROUTE_FULL_STRING;
+				alertType = ROUTE_INDEX_FREE;
+				dialog.setSingleChoiceItems(csitems, ROUTE_INDEX_FREE, new OnClickListener() {
 
 					public void onClick(DialogInterface arg0, int pos) {
 						// TODO Auto-generated method stub
@@ -337,9 +393,8 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 				dialog.setPositiveButton(android.R.string.ok,
 						new OnClickListener() {
 							public void onClick(DialogInterface dialog, int which) {
-								map.addMarker(createMarkerOptions("test",
-										"snippet", point, true));
-								drawBetween2LastPoints();
+								map.addMarker(createMarkerOptions("note", "description \n\nPar: " + session.getUsername(), point, true));
+								drawBetween2LastPoints(getAlertColor(alertType));
 							}
 						});
 				dialog.setNegativeButton(android.R.string.cancel,
@@ -348,9 +403,9 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 							public void onClick(DialogInterface dialog, int which) {
 								// on enleve le dernier marker
 								int removeIndex = markers.size() - 1;
-								Marker removeMarker = markers.get(removeIndex);
-								removeMarker.remove();
-								markers.remove(removeIndex);
+								Marker removeMarker = markers.get(removeIndex); // get the marker
+								removeMarker.remove(); // remove the marker
+								markers.remove(removeIndex); // remove the index
 							}
 						});
 				dialog.create().show();
@@ -358,17 +413,32 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		}
 	}
 	
-	public void drawBetween2LastPoints(){
+	public int getAlertColor(int index) {
+		switch (index) {
+		case ROUTE_INDEX_FREE:
+			return ROUTE_FREE_COLOR;
+		case ROUTE_INDEX_NORMAL:
+			return ROUTE_NORMAL_COLOR;
+		case ROUTE_INDEX_FULL:
+			return ROUTE_FULL_COLOR;
+
+		default:
+			return ROUTE_FREE_COLOR;
+		}
+	}
+	
+	public void drawBetween2LastPoints(int color){
 		LatLng origin = markers.get(markers.size() - 2).getPosition();
 		LatLng dest = markers.get(markers.size() - 1).getPosition();
 		String url = getDirectionsUrl(origin, dest);
-		DownloadTask downloadTask = new DownloadTask();
+		DownloadTask downloadTask = new DownloadTask(color);
 		downloadTask.execute(url);
 	}
 	
 	public boolean isOdd(int size) {
 		return size % 2 == 0;
 	}
+	
 	private String getDirectionsUrl(LatLng origin,LatLng dest){
 		
 		// Origin of route
@@ -401,19 +471,11 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
         try{
                 URL url = new URL(strUrl);
 
-                // Creating an http connection to communicate with url 
                 urlConnection = (HttpURLConnection) url.openConnection();
-
-                // Connecting to url 
                 urlConnection.connect();
-
-                // Reading data from url 
                 iStream = urlConnection.getInputStream();
-
                 BufferedReader br = new BufferedReader(new InputStreamReader(iStream));
-
                 StringBuffer sb  = new StringBuffer();
-
                 String line = "";
                 while( ( line = br.readLine())  != null){
                         sb.append(line);
@@ -435,6 +497,12 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 	// Fetches data from url passed
 	private class DownloadTask extends AsyncTask<String, Void, String>{			
 				
+		private int color;
+
+		public DownloadTask(int color) {
+			// TODO Auto-generated constructor stub
+			this.color = color;
+		}
 		// Downloading data in non-ui thread
 		@Override
 		protected String doInBackground(String... url) {
@@ -457,7 +525,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		protected void onPostExecute(String result) {			
 			super.onPostExecute(result);			
 			
-			ParserTask parserTask = new ParserTask();
+			ParserTask parserTask = new ParserTask(color);
 			
 			// Invokes the thread for parsing the JSON data
 			parserTask.execute(result);
@@ -468,6 +536,12 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 	/** A class to parse the Google Places in JSON format */
     private class ParserTask extends AsyncTask<String, Integer, List<List<HashMap<String,String>>> >{
     	
+    	private int color;
+
+		public ParserTask(int color) {
+			// TODO Auto-generated constructor stub
+    		this.color = color;
+		}
     	// Parsing the data in non-ui thread    	
 		@Override
 		protected List<List<HashMap<String, String>>> doInBackground(String... jsonData) {
@@ -511,40 +585,30 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 						
 						points.add(position);						
 					}
-					
 					// Adding all the points in the route to LineOptions
 					lineOptions.addAll(points);
 					lineOptions.width(7);
-					lineOptions.color(Color.argb(125, 255, 0, 0));
-					
+					lineOptions.color(color);
 				}
 				
 				// Drawing polyline in the Google Map for the i-th route
 				if(lineOptions != null){
-					map.addPolyline(lineOptions);							
+					addPolyline(map.addPolyline(lineOptions));
 				}
 			}
-		}			
+		}
     }
 
 	@Override
 	public void onLocationChanged(Location location) {
 		// TODO Auto-generated method stub
-		// Getting latitude of the current location
         double latitude = location.getLatitude();
- 
-        // Getting longitude of the current location
         double longitude = location.getLongitude();
- 
-        // Creating a LatLng object for the current location
+
         LatLng latLng = new LatLng(latitude, longitude);
  
-        // Showing the current location in Google Map
         map.moveCamera(CameraUpdateFactory.newLatLng(latLng));
- 
-        // Zoom in the Google Map
-        map.animateCamera(CameraUpdateFactory.zoomTo(15));
-		
+        map.animateCamera(CameraUpdateFactory.zoomTo(session.getZoomSize()));
 	}
 
 	@Override
@@ -577,24 +641,51 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		// TODO Auto-generated method stub
 		ImageView deleteMarker = (ImageView) findViewById(R.id.deleteMarker);
 		
-//		marker.
-		Rect rect = deleteMarker.getDrawable().copyBounds();
 		deleteMarker.setVisibility(View.GONE);
 		
-		// in deleteMarker bouds
-		if(true) {
+		int index = markers.indexOf(marker);
+		if(isOdd(index)){
 			
-		} 
-		//else means that marker is moved. checkh if we redraw the route or note
-		else {
-			
+		} else {
+			polylines.get((index + 1)/ 2).remove();
 		}
-		
 	}
 
 	@Override
 	public void onMarkerDragStart(Marker marker) {
 		// TODO Auto-generated method stub
 		findViewById(R.id.deleteMarker).setVisibility(View.VISIBLE);
+		
+		int index = markers.indexOf(marker);
+		if(isOdd(index)){
+			removePolyline(polylines.get(index / 2)); // if markers size is odd, thus there is "markers.size / 2" polylines
+		} else {
+			removePolyline(polylines.get((index + 1)/ 2));
+		}
+	}
+
+	@Override
+	public void onCameraChange(CameraPosition position) {
+		// TODO Auto-generated method stub
+		session.setAnimeToLat(""+position.target.latitude);
+		session.setAnimeToLng(""+position.target.longitude);
 	}   
+	
+	public void addPolyline(Polyline polyline){
+		polylines.add(polyline);
+		polylineDegrees.add(alertType);
+	}
+	
+	public void removePolyline(Polyline polyline){
+		int index = polylines.indexOf(polyline);
+		
+		if(polylines.size() >= index){
+			polylines.get(index).remove();
+			polylineDegrees.remove(index);
+		}
+	}
+	
+	public boolean isEmailValid(CharSequence email) {
+	   return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches();
+	}
 }
