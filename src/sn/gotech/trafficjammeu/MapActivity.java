@@ -643,7 +643,7 @@ public void drawBetween2Points(int color, Marker aMarker, Marker bMarker){
 				if(lineOptions != null){
 					Polyline polyline = map.addPolyline(lineOptions);
 					polylines.add(polyline);
-					Toast.makeText(MapActivity.this, "polyline size: "+polylines.size(), 5000).show();
+					Toast.makeText(MapActivity.this, "polyline size: "+polylines.size(), Toast.LENGTH_LONG).show();
 				}
 			}
 		}
