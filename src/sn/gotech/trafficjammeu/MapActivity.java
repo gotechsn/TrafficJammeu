@@ -119,8 +119,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		inflater.inflate(R.menu.main, menu);
 		
 		ActionBar actionBar = getActionBar();
-//		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
-		//actionBar.setDisplayHomeAsUpEnabled(true);
+		actionBar.setDisplayHomeAsUpEnabled(true);
     	return super.onCreateOptionsMenu(menu);
     }
     
@@ -359,19 +358,9 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 			toast.show();
 		} else {
 
-			AlertDialog.Builder buildInfosMarker = new AlertDialog.Builder(MapActivity.this);
-			buildInfosMarker.setTitle("Infos sur ce point");
-			buildInfosMarker.setMessage("ajouter des infos sur ce point");
-			final EditText inputInfos = new EditText(this);
-			buildInfosMarker.setView(inputInfos);
-			buildInfosMarker.create().show();
 			final LatLng point = position;
-<<<<<<< HEAD
 
 			Marker marker = map.addMarker((new MarkerOptions()).position(point).draggable(true).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
-=======
-			Marker marker = map.addMarker(createMarkerOptions("test", "snippet", point, true));
->>>>>>> 06299051038e8921cb801d40fa31111f4adb5d4c
 			markers.add(marker);
 			
 			if (isOdd(markers.size())) {
@@ -467,6 +456,33 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		downloadTask.execute(url);
 	}
 	
+public void drawBetween2Points(int color, Marker aMarker, Marker bMarker){
+		switch (color) {
+		case Color.RED:
+			aMarker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
+			bMarker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
+			break;
+		case Color.GREEN:
+			aMarker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
+			bMarker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
+			break;
+		case Color.YELLOW:
+			aMarker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW));
+			bMarker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW));
+			break;
+
+		default:
+			break;
+		}
+		
+		LatLng origin = aMarker.getPosition();
+		LatLng dest = bMarker.getPosition();
+		
+		String url = getDirectionsUrl(origin, dest);
+		DownloadTask downloadTask = new DownloadTask(color);
+		downloadTask.execute(url);
+	}
+
 	public boolean isOdd(int size) {
 		return size % 2 == 0;
 	}
@@ -627,6 +643,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 				if(lineOptions != null){
 					Polyline polyline = map.addPolyline(lineOptions);
 					polylines.add(polyline);
+					Toast.makeText(MapActivity.this, "polyline size: "+polylines.size(), 5000).show();
 				}
 			}
 		}
@@ -678,7 +695,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		
 		int index = markers.indexOf(marker);
 		if(isOdd(index)){ // mean that its a even number (1, 3, 4, ...)
-//			polylines.get(index / 2); // if markers size is odd, thus there is "markers.size / 2" polylines
+			drawBetween2Points(getAlertColor(alertType), marker, markers.get(index+1));
 		} else {
 			drawBetween2LastPoints(getAlertColor(alertType), marker.getTitle(), marker.getSnippet());
 		}
@@ -691,15 +708,15 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		
 		int index = markers.indexOf(marker);
 				
-//		Toast.makeText(this, "is " + index + " odd "+isOdd(index), 5000).show();
-//		// if marker has odd index in the array, that means that marker number in the map is even
 		if(isOdd(index)){ // mean that its a even number (1, 3, 4, ...)
 			if(polylines.size() > (index+1)/2){
-				polylines.get((index+1)/2).remove();
+				polylines.get((index+1)/2).remove(); // on enleve le polyline de la map
+				polylines.remove((index+1)/2); // on supprime son index de la liste
 			}
 		} else {
 			if(polylines.size() > index/2){
-				polylines.get(index / 2).remove();
+				polylines.get(index / 2).remove(); // on enleve le polyline de la map
+				polylines.remove(index / 2); // on supprime son index de la liste
 			}
 		}
 	}
