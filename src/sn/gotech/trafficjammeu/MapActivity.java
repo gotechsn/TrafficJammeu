@@ -36,6 +36,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -98,7 +99,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		
 		ActionBar actionBar = getActionBar();
 //		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
-		actionBar.setDisplayHomeAsUpEnabled(true);
+		//actionBar.setDisplayHomeAsUpEnabled(true);
     	return super.onCreateOptionsMenu(menu);
     }
     
@@ -301,8 +302,13 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 			toast.show();
 		} else {
 
+			AlertDialog.Builder buildInfosMarker = new AlertDialog.Builder(MapActivity.this);
+			buildInfosMarker.setTitle("Infos sur ce point");
+			buildInfosMarker.setMessage("ajouter des infos sur ce point");
+			final EditText inputInfos = new EditText(this);
+			buildInfosMarker.setView(inputInfos);
+			buildInfosMarker.create().show();
 			final LatLng point = position;
-
 			Marker marker = map.addMarker(createMarkerOptions("test", "snippet", point, true));
 			markers.add(marker);
 			
