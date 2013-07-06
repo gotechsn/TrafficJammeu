@@ -1,2 +1,5 @@
 /bin
 /gen
+/AndroidManifest.xml
+/ic_launcher-web.png
+/project.properties
