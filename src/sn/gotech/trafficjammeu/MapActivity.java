@@ -12,6 +12,7 @@ import java.util.List;
 
 import org.json.JSONObject;
 
+import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -20,13 +21,17 @@ import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.Point;
+import android.graphics.Rect;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -50,7 +55,9 @@ import com.google.android.gms.maps.GoogleMap.OnCameraChangeListener;
 import com.google.android.gms.maps.GoogleMap.OnMapLongClickListener;
 import com.google.android.gms.maps.GoogleMap.OnMarkerDragListener;
 import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.Projection;
 import com.google.android.gms.maps.UiSettings;
+import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
@@ -60,7 +67,8 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 
-public class MapActivity extends Activity implements OnMapLongClickListener, LocationListener, OnMarkerDragListener, OnCameraChangeListener{
+@TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
+public class MapActivity extends Activity implements OnMapLongClickListener, LocationListener, OnMarkerDragListener, OnCameraChangeListener {
 
 	private static final String MAP_VIEW_TYPE_SELECTED = "map_type_selected";
 	private static final float MIN_ZOOM_LEVEL_FOR_MARKING = 13.0f;
@@ -81,6 +89,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 	private ArrayList<Polyline> polylines;
 	private int alertType;
 	private LatLng myPos;
+	private ImageView deleteMarker;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -240,6 +249,9 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 	        map.setOnCameraChangeListener(this);
 	        
 			mReturn = true;
+			
+			// marker deleter on drag
+			deleteMarker = (ImageView) findViewById(R.id.deleteMarker);
 		}
 		return mReturn;
 	}
@@ -424,10 +436,18 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		Marker aMarker = markers.get(markers.size() - 2);
 		Marker bMarker = markers.get(markers.size() - 1);
 		
-		aMarker.setTitle("A: " + title);
+		if(aMarker == null || bMarker ==null) return;
+		
+		if(false){ // put something there to avoid string prefix duplication
+//			aMarker.setTitle(title);
+//			bMarker.setTitle(title);
+		} else {
+			aMarker.setTitle("A: " + title);
+			bMarker.setTitle("B: " + title);
+		}
+		
 		aMarker.setSnippet(snippet);
 		aMarker.setIcon(BitmapDescriptorFactory.defaultMarker());
-		bMarker.setTitle("B: " + title);
 		bMarker.setSnippet(snippet);
 		
 		switch (color) {
@@ -643,7 +663,6 @@ public void drawBetween2Points(int color, Marker aMarker, Marker bMarker){
 				if(lineOptions != null){
 					Polyline polyline = map.addPolyline(lineOptions);
 					polylines.add(polyline);
-					Toast.makeText(MapActivity.this, "polyline size: "+polylines.size(), Toast.LENGTH_LONG).show();
 				}
 			}
 		}
@@ -683,29 +702,48 @@ public void drawBetween2Points(int color, Marker aMarker, Marker bMarker){
 	@Override
 	public void onMarkerDrag(Marker marker) {
 		// TODO Auto-generated method stub
-		
+		// change image view when marker over the delete icon
+//		marker.set
 	}
 
 	@Override
 	public void onMarkerDragEnd(Marker marker) {
 		// TODO Auto-generated method stub
-		ImageView deleteMarker = (ImageView) findViewById(R.id.deleteMarker);
+		LatLng markerLocation = marker.getPosition();
+		LatLng mapCenter = map.getCameraPosition().target;
 		
-		deleteMarker.setVisibility(View.GONE);
-		
+		float[] results = new float[1];
+		Location.distanceBetween(markerLocation.latitude, markerLocation.longitude,
+				mapCenter.latitude, mapCenter.longitude, results);
+		 
 		int index = markers.indexOf(marker);
-		if(isOdd(index)){ // mean that its a even number (1, 3, 4, ...)
-			drawBetween2Points(getAlertColor(alertType), marker, markers.get(index+1));
+		if(results[0] / 1000 < 0.5){
+			
+			if(!isOdd(index)){
+				if(markers.size() > (index)){
+					markers.get(index - 1).setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
+				}
+			}
+			marker.remove();
+			markers.remove(index);
+			
 		} else {
-			drawBetween2LastPoints(getAlertColor(alertType), marker.getTitle(), marker.getSnippet());
+			if(isOdd(index)){ // mean that its a even number (1, 3, 4, ...)
+				if(markers.size() > index+1) {
+					drawBetween2Points(getAlertColor(alertType), marker, markers.get(index+1));
+				}
+			} else {
+				drawBetween2LastPoints(getAlertColor(alertType), marker.getTitle(), marker.getSnippet());
+			}
 		}
+
+		deleteMarker.setVisibility(View.GONE);
 	} 
 	
 	@Override
 	public void onMarkerDragStart(Marker marker) {
 		// TODO Auto-generated method stub
-		findViewById(R.id.deleteMarker).setVisibility(View.VISIBLE);
-		
+		deleteMarker.setVisibility(View.VISIBLE);
 		int index = markers.indexOf(marker);
 				
 		if(isOdd(index)){ // mean that its a even number (1, 3, 4, ...)
