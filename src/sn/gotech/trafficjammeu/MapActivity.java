@@ -12,26 +12,25 @@ import java.util.List;
 
 import org.json.JSONObject;
 
-import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.graphics.Color;
-import android.graphics.Point;
-import android.graphics.Rect;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
-import android.view.Display;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -55,9 +54,7 @@ import com.google.android.gms.maps.GoogleMap.OnCameraChangeListener;
 import com.google.android.gms.maps.GoogleMap.OnMapLongClickListener;
 import com.google.android.gms.maps.GoogleMap.OnMarkerDragListener;
 import com.google.android.gms.maps.MapFragment;
-import com.google.android.gms.maps.Projection;
 import com.google.android.gms.maps.UiSettings;
-import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
@@ -67,8 +64,7 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 
-@TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
-public class MapActivity extends Activity implements OnMapLongClickListener, LocationListener, OnMarkerDragListener, OnCameraChangeListener {
+public class MapActivity extends Activity implements OnMapLongClickListener, LocationListener, OnMarkerDragListener, OnCameraChangeListener{
 
 	private static final String MAP_VIEW_TYPE_SELECTED = "map_type_selected";
 	private static final float MIN_ZOOM_LEVEL_FOR_MARKING = 13.0f;
@@ -89,7 +85,6 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 	private ArrayList<Polyline> polylines;
 	private int alertType;
 	private LatLng myPos;
-	private ImageView deleteMarker;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,24 +96,88 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
         	registerUser();
         } else {
         	manageTuto();
-            configureMap();
-            manageLocation();
+        	if(isNetworkAvailable()){
+            	downloadData();
+                configureMap();
+                manageLocation();
+        	} else {
+        		showNoConnectionDialog(this);
+        	}
         }
+    }
+    
+    @Override
+    protected void onStop() {
+    	// TODO Auto-generated method stub
+    	super.onStop();
+    }
+
+	public void showNoConnectionDialog(final Activity activity) {
+
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setTitle("Etes vous connecté ?");
+		builder.setMessage("Veuillez vérifier votre connexion internet. L'activation du GPS facilitera votre localisation dans l'application.");
+		builder.setPositiveButton("Wifi",
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+						activity.startActivity(new Intent(
+								Settings.ACTION_WIFI_SETTINGS)); 
+					}
+				});
+		builder.setPositiveButton("Data",
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+						activity.startActivity(new Intent(
+								Settings.ACTION_NETWORK_OPERATOR_SETTINGS)); 
+					}
+				});
+		builder.setNeutralButton("GPS", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+				activity.startActivity(new Intent(
+						Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+			}
+		});
+		builder.setNegativeButton("Quitter",
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+
+						activity.finish();
+					}
+				});
+
+		builder.setCancelable(false);
+		builder.show();
+	}
+	
+	public boolean isNetworkAvailable() {
+		ConnectivityManager connectivityManager = (ConnectivityManager) this
+				.getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo activeNetworkInfo = connectivityManager
+				.getActiveNetworkInfo();
+		return activeNetworkInfo != null && activeNetworkInfo.isConnectedOrConnecting();
+	}
+	
+    public void downloadData(){
+    	
     }
     
 	@Override
 	public void onRestoreInstanceState(Bundle savedInstanceState) {
 		// Restore the previously serialized current tab position.
 		if (savedInstanceState.containsKey(MAP_VIEW_TYPE_SELECTED)) {
-			map.setMapType(savedInstanceState.getInt(MAP_VIEW_TYPE_SELECTED));
-//			map.animateCamera(CameraUpdateFactory.)
+			if(map != null){
+				map.setMapType(savedInstanceState.getInt(MAP_VIEW_TYPE_SELECTED));
+//				map.animateCamera(CameraUpdateFactory.z)
+			}
 		}
 	}
 
 	@Override
 	public void onSaveInstanceState(Bundle outState) {
 		// Serialize the current tab position.
-		outState.putInt(MAP_VIEW_TYPE_SELECTED, map.getMapType());
+		if(map != null){
+			outState.putInt(MAP_VIEW_TYPE_SELECTED, map.getMapType());
+		}
 	}
     
     @Override
@@ -155,31 +214,36 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
     
     public void changeMapType(){
     	
-    	int type = map.getMapType(); 
-    	Toast toast = new Toast(this);
-    	
-    	switch (type) {
-		case GoogleMap.MAP_TYPE_NORMAL:
-			map.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
-			toast = getCustomToast(R.string.mapTypeSatellite);
-			break;
-		case GoogleMap.MAP_TYPE_SATELLITE:
-			map.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
-			toast = getCustomToast(R.string.mapTypeStreet);
-			break;
-		case GoogleMap.MAP_TYPE_TERRAIN:
-			map.setMapType(GoogleMap.MAP_TYPE_HYBRID);
-			toast = getCustomToast(R.string.mapTypeHybrid);
-			break;
-		case GoogleMap.MAP_TYPE_HYBRID:
-			map.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-			toast = getCustomToast(R.string.mapTypeNormal);
-			break;
+    	if(map != null){
 
-		default:
-			break;
-		}
-    	toast.show();
+        	int type = map.getMapType(); 
+        	Toast toast = new Toast(this);
+        	
+        	switch (type) {
+    		case GoogleMap.MAP_TYPE_NORMAL:
+    			map.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+    			toast = getCustomToast(R.string.mapTypeSatellite);
+    			break;
+    		case GoogleMap.MAP_TYPE_SATELLITE:
+    			map.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
+    			toast = getCustomToast(R.string.mapTypeStreet);
+    			break;
+    		case GoogleMap.MAP_TYPE_TERRAIN:
+    			map.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+    			toast = getCustomToast(R.string.mapTypeHybrid);
+    			break;
+    		case GoogleMap.MAP_TYPE_HYBRID:
+    			map.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+    			toast = getCustomToast(R.string.mapTypeNormal);
+    			break;
+
+    		default:
+    			break;
+    		}
+        	toast.show();
+    	} else {
+    		
+    	}
     }
     
     public Toast getCustomToast(int stringResourceId){
@@ -249,9 +313,6 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 	        map.setOnCameraChangeListener(this);
 	        
 			mReturn = true;
-			
-			// marker deleter on drag
-			deleteMarker = (ImageView) findViewById(R.id.deleteMarker);
 		}
 		return mReturn;
 	}
@@ -436,18 +497,10 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		Marker aMarker = markers.get(markers.size() - 2);
 		Marker bMarker = markers.get(markers.size() - 1);
 		
-		if(aMarker == null || bMarker ==null) return;
-		
-		if(false){ // put something there to avoid string prefix duplication
-//			aMarker.setTitle(title);
-//			bMarker.setTitle(title);
-		} else {
-			aMarker.setTitle("A: " + title);
-			bMarker.setTitle("B: " + title);
-		}
-		
+		aMarker.setTitle("A: " + title);
 		aMarker.setSnippet(snippet);
 		aMarker.setIcon(BitmapDescriptorFactory.defaultMarker());
+		bMarker.setTitle("B: " + title);
 		bMarker.setSnippet(snippet);
 		
 		switch (color) {
@@ -663,6 +716,7 @@ public void drawBetween2Points(int color, Marker aMarker, Marker bMarker){
 				if(lineOptions != null){
 					Polyline polyline = map.addPolyline(lineOptions);
 					polylines.add(polyline);
+					Toast.makeText(MapActivity.this, "polyline size: "+polylines.size(), Toast.LENGTH_LONG).show();
 				}
 			}
 		}
@@ -702,48 +756,29 @@ public void drawBetween2Points(int color, Marker aMarker, Marker bMarker){
 	@Override
 	public void onMarkerDrag(Marker marker) {
 		// TODO Auto-generated method stub
-		// change image view when marker over the delete icon
-//		marker.set
+		
 	}
 
 	@Override
 	public void onMarkerDragEnd(Marker marker) {
 		// TODO Auto-generated method stub
-		LatLng markerLocation = marker.getPosition();
-		LatLng mapCenter = map.getCameraPosition().target;
+		ImageView deleteMarker = (ImageView) findViewById(R.id.deleteMarker);
 		
-		float[] results = new float[1];
-		Location.distanceBetween(markerLocation.latitude, markerLocation.longitude,
-				mapCenter.latitude, mapCenter.longitude, results);
-		 
-		int index = markers.indexOf(marker);
-		if(results[0] / 1000 < 0.5){
-			
-			if(!isOdd(index)){
-				if(markers.size() > (index)){
-					markers.get(index - 1).setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
-				}
-			}
-			marker.remove();
-			markers.remove(index);
-			
-		} else {
-			if(isOdd(index)){ // mean that its a even number (1, 3, 4, ...)
-				if(markers.size() > index+1) {
-					drawBetween2Points(getAlertColor(alertType), marker, markers.get(index+1));
-				}
-			} else {
-				drawBetween2LastPoints(getAlertColor(alertType), marker.getTitle(), marker.getSnippet());
-			}
-		}
-
 		deleteMarker.setVisibility(View.GONE);
+		
+		int index = markers.indexOf(marker);
+		if(isOdd(index)){ // mean that its a even number (1, 3, 4, ...)
+			drawBetween2Points(getAlertColor(alertType), marker, markers.get(index+1));
+		} else {
+			drawBetween2LastPoints(getAlertColor(alertType), marker.getTitle(), marker.getSnippet());
+		}
 	} 
 	
 	@Override
 	public void onMarkerDragStart(Marker marker) {
 		// TODO Auto-generated method stub
-		deleteMarker.setVisibility(View.VISIBLE);
+		findViewById(R.id.deleteMarker).setVisibility(View.VISIBLE);
+		
 		int index = markers.indexOf(marker);
 				
 		if(isOdd(index)){ // mean that its a even number (1, 3, 4, ...)
