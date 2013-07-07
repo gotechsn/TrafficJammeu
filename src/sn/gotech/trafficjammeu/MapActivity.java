@@ -77,6 +77,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 	private static final int ROUTE_FREE_COLOR = Color.GREEN;
 	private static final int ROUTE_NORMAL_COLOR = Color.YELLOW;
 	private static final int ROUTE_FULL_COLOR = Color.RED;
+	private String infosDesc = "";
 	private GoogleMap map;
 	private UiSettings mapSettings;
 	private ArrayList<Marker> markers;
@@ -199,13 +200,22 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		case R.id.action_change_view:
 			changeMapType();
 			break;
+		case R.id.action_mode_text:
+			loadModeText();
+			break;
 		default:
 			break;
 		}
     	return super.onOptionsItemSelected(item);
     }
     
-    public void changeMapType(){
+    private void loadModeText() {
+		// TODO Auto-generated method stub
+    	Toast.makeText(this, "MODE TEXT", Toast.LENGTH_LONG).show();
+    	
+	}
+
+	public void changeMapType(){
     	
     	if(map != null){
 
@@ -425,7 +435,6 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		} else {
 
 			final LatLng point = position;
-
 			Marker marker = map.addMarker((new MarkerOptions()).position(point).draggable(true).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
 			markers.add(marker);
 			
@@ -452,7 +461,32 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 				dialog.setPositiveButton(android.R.string.ok,
 						new OnClickListener() {
 							public void onClick(DialogInterface dialog, int which) {
-								drawBetween2LastPoints(getAlertColor(alertType), "title", "desc");
+								
+								
+								AlertDialog.Builder buildInfos = new AlertDialog.Builder(MapActivity.this);
+								buildInfos.setTitle("Description du trajet");
+								final EditText inputInfos = new EditText(MapActivity.this);
+								buildInfos.setView(inputInfos);
+								buildInfos.setPositiveButton(android.R.string.ok, new OnClickListener() {
+									
+									@Override
+									public void onClick(DialogInterface dialog, int which) {
+										// TODO Auto-generated method stub
+										
+										infosDesc = inputInfos.getText().toString();
+										Log.i("DESC", infosDesc);
+										drawBetween2LastPoints(getAlertColor(alertType), "title", infosDesc);
+									}
+								});
+								
+								AlertDialog buildInfosDialog = buildInfos.create();
+								buildInfosDialog.show();
+								if(infosDesc.isEmpty()){
+									buildInfosDialog.getButton(Dialog.BUTTON_POSITIVE).setEnabled(false);
+								}
+								
+								
+								
 							}
 						});
 				dialog.setNegativeButton(android.R.string.cancel,
