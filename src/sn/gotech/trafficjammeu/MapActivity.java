@@ -16,11 +16,7 @@ import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
-<<<<<<< HEAD
-import android.app.AlertDialog.Builder;
-=======
 import android.content.Context;
->>>>>>> a9076c1680d11df2772a75fcc8841455581c94af
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
@@ -473,7 +469,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 						new OnClickListener() {
 							public void onClick(DialogInterface dialog, int which) {
 								
-								boolean textEmpty = false;
+								
 								AlertDialog.Builder buildInfos = new AlertDialog.Builder(MapActivity.this);
 								buildInfos.setTitle("Description du trajet");
 								final EditText inputInfos = new EditText(MapActivity.this);
