@@ -4,12 +4,21 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.http.NameValuePair;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import android.app.ActionBar;
@@ -477,7 +486,12 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 										// TODO Auto-generated method stub
 										infosDesc = inputInfos.getText().toString();
 										Log.i("DESC", infosDesc);
-										drawBetween2LastPoints(getAlertColor(alertType), "title", infosDesc);
+										ArrayList<LatLng> last2LatLng = drawBetween2LastPoints(getAlertColor(alertType), "title", infosDesc);
+										Log.i("AVLAST", String.valueOf(last2LatLng.get(0)));
+										Log.i("LAST", String.valueOf(last2LatLng.get(1)));
+			                           //sendRoutesDatas();
+										//à appeler une fois que les méthodes est complétement ecrite.
+												
 									}
 								})
 								.create();
@@ -486,9 +500,6 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 									@Override
 									public void afterTextChanged(Editable s) {
 										// TODO Auto-generated method stub
-									  //infosDesc = s.toString();
-									  Log.i("TEXTINPUT", s.toString());
-									  Log.i("TEXTINPUT", String.valueOf(s.toString().length()));
 									  if(s.toString().length() == 0){
 											buildInfos.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(false);
 										}
@@ -498,13 +509,10 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 									}
 
 									@Override
-									public void beforeTextChanged(
-											CharSequence s, int start,
-											int count, int after) {}
+									public void beforeTextChanged(CharSequence s, int start,int count, int after) {}
 
 									@Override
-									public void onTextChanged(CharSequence s,
-											int start, int before, int count) {}
+									public void onTextChanged(CharSequence s,int start, int before, int count) {}
 									
 								});
 								
@@ -530,6 +538,34 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		}
 	}
 	
+	public void sendRouteDatas(String lat1st, String lng1st, String lat2nd, String lng2nd, String user, String desc){
+		
+		List<NameValuePair> values = new ArrayList<NameValuePair>();
+		values.add(new BasicNameValuePair("lat1st", lat1st));
+		values.add(new BasicNameValuePair("lng1st", lng1st));
+		values.add(new BasicNameValuePair("lat2nd", lat2nd));
+		values.add(new BasicNameValuePair("lng2nd", lng2nd));
+		values.add(new BasicNameValuePair("desc", desc));
+		values.add(new BasicNameValuePair("user", user));
+		HttpClient client = new DefaultHttpClient();
+		HttpPost post = new HttpPost("http://usmandiaye.legtux.org/android/json.php");
+		try {
+			post.setEntity(new UrlEncodedFormEntity(values));
+			client.execute(post);
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ClientProtocolException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+	}
+	
 	public int getAlertColor(int index) {
 		switch (index) {
 		case ROUTE_INDEX_FREE:
@@ -544,11 +580,13 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		}
 	}
 	
-	public void drawBetween2LastPoints(int color, String title, String snippet){
+	public ArrayList<LatLng> drawBetween2LastPoints(int color, String title, String snippet){
 		
 		Marker aMarker = markers.get(markers.size() - 2);
 		Marker bMarker = markers.get(markers.size() - 1);
-		
+		ArrayList<LatLng> last2markers = new ArrayList<LatLng>();
+		last2markers.add(aMarker.getPosition());
+		last2markers.add(bMarker.getPosition());
 		aMarker.setTitle("A: " + title);
 		aMarker.setSnippet(snippet);
 		aMarker.setIcon(BitmapDescriptorFactory.defaultMarker());
@@ -579,6 +617,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		String url = getDirectionsUrl(origin, dest);
 		DownloadTask downloadTask = new DownloadTask(color);
 		downloadTask.execute(url);
+		return last2markers;
 	}
 	
 public void drawBetween2Points(int color, Marker aMarker, Marker bMarker){
@@ -768,7 +807,7 @@ public void drawBetween2Points(int color, Marker aMarker, Marker bMarker){
 				if(lineOptions != null){
 					Polyline polyline = map.addPolyline(lineOptions);
 					polylines.add(polyline);
-					Toast.makeText(MapActivity.this, "polyline size: "+polylines.size(), Toast.LENGTH_LONG).show();
+					//Toast.makeText(MapActivity.this, "polyline size: "+polylines.size(), Toast.LENGTH_LONG).show();
 				}
 			}
 		}
