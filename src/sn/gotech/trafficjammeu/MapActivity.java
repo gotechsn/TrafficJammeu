@@ -30,6 +30,8 @@ import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -462,29 +464,51 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 						new OnClickListener() {
 							public void onClick(DialogInterface dialog, int which) {
 								
-								
-								AlertDialog.Builder buildInfos = new AlertDialog.Builder(MapActivity.this);
-								buildInfos.setTitle("Description du trajet");
 								final EditText inputInfos = new EditText(MapActivity.this);
-								buildInfos.setView(inputInfos);
-								buildInfos.setPositiveButton(android.R.string.ok, new OnClickListener() {
+								final AlertDialog buildInfos = new AlertDialog.Builder(MapActivity.this)
+								.setTitle("Description du trajet")
+								.setMessage("Message")
+								.setView(inputInfos)
+								.setPositiveButton(android.R.string.ok, new OnClickListener() {
 									
 									@Override
 									public void onClick(DialogInterface dialog, int which) {
 										// TODO Auto-generated method stub
-										
 										infosDesc = inputInfos.getText().toString();
 										Log.i("DESC", infosDesc);
 										drawBetween2LastPoints(getAlertColor(alertType), "title", infosDesc);
 									}
+								})
+								.create();
+								inputInfos.addTextChangedListener(new TextWatcher(){
+
+									@Override
+									public void afterTextChanged(Editable s) {
+										// TODO Auto-generated method stub
+									  //infosDesc = s.toString();
+									  Log.i("TEXTINPUT", s.toString());
+									  Log.i("TEXTINPUT", String.valueOf(s.toString().length()));
+									  if(s.toString().length() == 0){
+											buildInfos.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(false);
+										}
+									  else{
+										  buildInfos.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(true);
+									  }
+									}
+
+									@Override
+									public void beforeTextChanged(
+											CharSequence s, int start,
+											int count, int after) {}
+
+									@Override
+									public void onTextChanged(CharSequence s,
+											int start, int before, int count) {}
+									
 								});
 								
-								AlertDialog buildInfosDialog = buildInfos.create();
-								buildInfosDialog.show();
-								if(infosDesc.isEmpty()){
-									buildInfosDialog.getButton(Dialog.BUTTON_POSITIVE).setEnabled(false);
-								}
-								
+								buildInfos.show();
+								buildInfos.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
 								
 								
 							}
