@@ -3,30 +3,27 @@
     <item
         android:icon="@drawable/ic_menu_refresh"
         android:id="@+id/action_refresh"
-        android:showAsAction="ifRoom|collapseActionView"
+        android:showAsAction="ifRoom"
         android:title="@string/rafraichir"
         />
     <item
         android:icon="@drawable/ic_menu_text"
         android:id="@+id/action_mode_text"
-        android:showAsAction="ifRoom|collapseActionView"
+        android:showAsAction="ifRoom"
         android:title="@string/listeText"
         />
    
     <item
         android:icon="@drawable/ic_map"
         android:id="@+id/action_change_view"
-        android:showAsAction="ifRoom|collapseActionView"
+        android:showAsAction="ifRoom"
         android:title="@string/changeMapType"
         />
     
     <item
         android:icon="@drawable/ic_infos"
         android:id="@+id/action_info"
-
-        android:showAsAction="ifRoom|collapseActionView"
+        android:showAsAction="ifRoom"
         android:title="@string/infos"
-
         />
-        
 </menu>

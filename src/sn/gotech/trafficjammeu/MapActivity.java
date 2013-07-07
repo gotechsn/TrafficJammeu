@@ -16,6 +16,11 @@ import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+<<<<<<< HEAD
+import android.app.AlertDialog.Builder;
+=======
+import android.content.Context;
+>>>>>>> a9076c1680d11df2772a75fcc8841455581c94af
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
@@ -24,8 +29,11 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -73,6 +81,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 	private static final int ROUTE_FREE_COLOR = Color.GREEN;
 	private static final int ROUTE_NORMAL_COLOR = Color.YELLOW;
 	private static final int ROUTE_FULL_COLOR = Color.RED;
+	private String infosDesc = "";
 	private GoogleMap map;
 	private UiSettings mapSettings;
 	private ArrayList<Marker> markers;
@@ -92,24 +101,88 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
         	registerUser();
         } else {
         	manageTuto();
-            configureMap();
-            manageLocation();
+        	if(isNetworkAvailable()){
+            	downloadData();
+                configureMap();
+                manageLocation();
+        	} else {
+        		showNoConnectionDialog(this);
+        	}
         }
+    }
+    
+    @Override
+    protected void onStop() {
+    	// TODO Auto-generated method stub
+    	super.onStop();
+    }
+
+	public void showNoConnectionDialog(final Activity activity) {
+
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setTitle("Etes vous connecté ?");
+		builder.setMessage("Veuillez vérifier votre connexion internet. L'activation du GPS facilitera votre localisation dans l'application.");
+		builder.setPositiveButton("Wifi",
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+						activity.startActivity(new Intent(
+								Settings.ACTION_WIFI_SETTINGS)); 
+					}
+				});
+		builder.setPositiveButton("Data",
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+						activity.startActivity(new Intent(
+								Settings.ACTION_NETWORK_OPERATOR_SETTINGS)); 
+					}
+				});
+		builder.setNeutralButton("GPS", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+				activity.startActivity(new Intent(
+						Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+			}
+		});
+		builder.setNegativeButton("Quitter",
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+
+						activity.finish();
+					}
+				});
+
+		builder.setCancelable(false);
+		builder.show();
+	}
+	
+	public boolean isNetworkAvailable() {
+		ConnectivityManager connectivityManager = (ConnectivityManager) this
+				.getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo activeNetworkInfo = connectivityManager
+				.getActiveNetworkInfo();
+		return activeNetworkInfo != null && activeNetworkInfo.isConnectedOrConnecting();
+	}
+	
+    public void downloadData(){
+    	
     }
     
 	@Override
 	public void onRestoreInstanceState(Bundle savedInstanceState) {
 		// Restore the previously serialized current tab position.
 		if (savedInstanceState.containsKey(MAP_VIEW_TYPE_SELECTED)) {
-			map.setMapType(savedInstanceState.getInt(MAP_VIEW_TYPE_SELECTED));
-//			map.animateCamera(CameraUpdateFactory.)
+			if(map != null){
+				map.setMapType(savedInstanceState.getInt(MAP_VIEW_TYPE_SELECTED));
+//				map.animateCamera(CameraUpdateFactory.z)
+			}
 		}
 	}
 
 	@Override
 	public void onSaveInstanceState(Bundle outState) {
 		// Serialize the current tab position.
-		outState.putInt(MAP_VIEW_TYPE_SELECTED, map.getMapType());
+		if(map != null){
+			outState.putInt(MAP_VIEW_TYPE_SELECTED, map.getMapType());
+		}
 	}
     
     @Override
@@ -138,39 +211,53 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		case R.id.action_change_view:
 			changeMapType();
 			break;
+		case R.id.action_mode_text:
+			loadModeText();
+			break;
 		default:
 			break;
 		}
     	return super.onOptionsItemSelected(item);
     }
     
-    public void changeMapType(){
+    private void loadModeText() {
+		// TODO Auto-generated method stub
+    	Toast.makeText(this, "MODE TEXT", Toast.LENGTH_LONG).show();
     	
-    	int type = map.getMapType(); 
-    	Toast toast = new Toast(this);
-    	
-    	switch (type) {
-		case GoogleMap.MAP_TYPE_NORMAL:
-			map.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
-			toast = getCustomToast(R.string.mapTypeSatellite);
-			break;
-		case GoogleMap.MAP_TYPE_SATELLITE:
-			map.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
-			toast = getCustomToast(R.string.mapTypeStreet);
-			break;
-		case GoogleMap.MAP_TYPE_TERRAIN:
-			map.setMapType(GoogleMap.MAP_TYPE_HYBRID);
-			toast = getCustomToast(R.string.mapTypeHybrid);
-			break;
-		case GoogleMap.MAP_TYPE_HYBRID:
-			map.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-			toast = getCustomToast(R.string.mapTypeNormal);
-			break;
+	}
 
-		default:
-			break;
-		}
-    	toast.show();
+	public void changeMapType(){
+    	
+    	if(map != null){
+
+        	int type = map.getMapType(); 
+        	Toast toast = new Toast(this);
+        	
+        	switch (type) {
+    		case GoogleMap.MAP_TYPE_NORMAL:
+    			map.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+    			toast = getCustomToast(R.string.mapTypeSatellite);
+    			break;
+    		case GoogleMap.MAP_TYPE_SATELLITE:
+    			map.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
+    			toast = getCustomToast(R.string.mapTypeStreet);
+    			break;
+    		case GoogleMap.MAP_TYPE_TERRAIN:
+    			map.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+    			toast = getCustomToast(R.string.mapTypeHybrid);
+    			break;
+    		case GoogleMap.MAP_TYPE_HYBRID:
+    			map.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+    			toast = getCustomToast(R.string.mapTypeNormal);
+    			break;
+
+    		default:
+    			break;
+    		}
+        	toast.show();
+    	} else {
+    		
+    	}
     }
     
     public Toast getCustomToast(int stringResourceId){
@@ -359,7 +446,6 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		} else {
 
 			final LatLng point = position;
-
 			Marker marker = map.addMarker((new MarkerOptions()).position(point).draggable(true).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
 			markers.add(marker);
 			
@@ -386,7 +472,32 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 				dialog.setPositiveButton(android.R.string.ok,
 						new OnClickListener() {
 							public void onClick(DialogInterface dialog, int which) {
-								drawBetween2LastPoints(getAlertColor(alertType), "title", "desc");
+								
+								boolean textEmpty = false;
+								AlertDialog.Builder buildInfos = new AlertDialog.Builder(MapActivity.this);
+								buildInfos.setTitle("Description du trajet");
+								final EditText inputInfos = new EditText(MapActivity.this);
+								buildInfos.setView(inputInfos);
+								buildInfos.setPositiveButton(android.R.string.ok, new OnClickListener() {
+									
+									@Override
+									public void onClick(DialogInterface dialog, int which) {
+										// TODO Auto-generated method stub
+										
+										infosDesc = inputInfos.getText().toString();
+										Log.i("DESC", infosDesc);
+										drawBetween2LastPoints(getAlertColor(alertType), "title", infosDesc);
+									}
+								});
+								
+								AlertDialog buildInfosDialog = buildInfos.create();
+								buildInfosDialog.show();
+								if(infosDesc.isEmpty()){
+									buildInfosDialog.getButton(Dialog.BUTTON_POSITIVE).setEnabled(false);
+								}
+								
+								
+								
 							}
 						});
 				dialog.setNegativeButton(android.R.string.cancel,
