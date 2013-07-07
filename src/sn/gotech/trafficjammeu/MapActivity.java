@@ -117,33 +117,26 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		builder.setTitle("Etes vous connecté ?");
 		builder.setMessage("Veuillez vérifier votre connexion internet. L'activation du GPS facilitera votre localisation dans l'application.");
-		builder.setPositiveButton("Wifi",
+		builder.setNegativeButton("Wifi",
 				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int which) {
 						activity.startActivity(new Intent(
 								Settings.ACTION_WIFI_SETTINGS)); 
 					}
 				});
-		builder.setPositiveButton("Data",
+		builder.setNeutralButton("Data",
 				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int which) {
 						activity.startActivity(new Intent(
 								Settings.ACTION_NETWORK_OPERATOR_SETTINGS)); 
 					}
 				});
-		builder.setNeutralButton("GPS", new DialogInterface.OnClickListener() {
+		builder.setPositiveButton("GPS", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
 				activity.startActivity(new Intent(
 						Settings.ACTION_LOCATION_SOURCE_SETTINGS));
 			}
 		});
-		builder.setNegativeButton("Quitter",
-				new DialogInterface.OnClickListener() {
-					public void onClick(DialogInterface dialog, int which) {
-
-						activity.finish();
-					}
-				});
 
 		builder.setCancelable(false);
 		builder.show();
