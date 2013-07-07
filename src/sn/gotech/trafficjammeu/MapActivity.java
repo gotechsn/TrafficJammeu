@@ -469,6 +469,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 								.setTitle("Description du trajet")
 								.setMessage("Message")
 								.setView(inputInfos)
+								.setCancelable(false)
 								.setPositiveButton(android.R.string.ok, new OnClickListener() {
 									
 									@Override
