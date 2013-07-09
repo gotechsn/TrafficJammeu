@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
@@ -18,7 +20,6 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import android.app.ActionBar;
@@ -489,8 +490,15 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 										ArrayList<LatLng> last2LatLng = drawBetween2LastPoints(getAlertColor(alertType), "title", infosDesc);
 										Log.i("AVLAST", String.valueOf(last2LatLng.get(0)));
 										Log.i("LAST", String.valueOf(last2LatLng.get(1)));
-			                           //sendRoutesDatas();
-										//à appeler une fois que les méthodes est complétement ecrite.
+										String lat1st = String.valueOf(last2LatLng.get(0).latitude);
+										String lng1st = String.valueOf(last2LatLng.get(0).longitude);
+										String lat2nd = String.valueOf(last2LatLng.get(1).latitude);
+										String lng2nd = String.valueOf(last2LatLng.get(1).longitude);
+										String usern = session.getUsername();
+										String descroute = infosDesc ;
+										String[] arrayDatas = {lat1st, lng1st, lat2nd, lng2nd, usern, descroute};
+			                            //sendRouteDatas(lat1st, lng1st, lat2nd, lng2nd, usern, descroute);
+										new sendRouteDatasTask().execute(arrayDatas);
 												
 									}
 								})
@@ -538,6 +546,17 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		}
 	}
 	
+	private class sendRouteDatasTask extends AsyncTask<String, Void, Void> {
+
+		@Override
+		protected Void doInBackground(String... params) {
+			// TODO Auto-generated method stub
+			sendRouteDatas(params[0], params[1], params[2], params[3], params[4], params[5]);
+			return null;
+		}
+		
+	}
+	
 	public void sendRouteDatas(String lat1st, String lng1st, String lat2nd, String lng2nd, String user, String desc){
 		
 		List<NameValuePair> values = new ArrayList<NameValuePair>();
@@ -552,6 +571,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		try {
 			post.setEntity(new UrlEncodedFormEntity(values));
 			client.execute(post);
+			Log.i("POSTMSG", "POSTED");
 		} catch (UnsupportedEncodingException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
