@@ -104,19 +104,14 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
         super.onCreate(savedInstanceState);
         setContentView(R.layout.map_fragment); 
         session = new SessionManager(getApplicationContext());
-        
-        if(!session.hasUID()){
-        	registerUser();
-        } else {
-        	manageTuto();
-        	if(isNetworkAvailable()){
-            	downloadData();
-                configureMap();
-                manageLocation();
-        	} else {
-        		showNoConnectionDialog(this);
-        	}
-        }
+		manageTuto();
+		if (isNetworkAvailable()) {
+			downloadData();
+			configureMap();
+			manageLocation();
+		} else {
+			showNoConnectionDialog(this);
+		}
     }
     
     @Override
@@ -447,109 +442,115 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 	@Override
 	public void onMapLongClick(LatLng position) {
 		// TODO Auto-generated method stub
-		if(map.getCameraPosition().zoom < MIN_ZOOM_LEVEL_FOR_MARKING){
-			Toast toast = getCustomToast("Zoomez encore " + Math.round(MIN_ZOOM_LEVEL_FOR_MARKING - map.getCameraPosition().zoom) + " fois pour pouvoir marquer des routes");
-			toast.show();
-		} else {
 
-			final LatLng point = position;
-			Marker marker = map.addMarker((new MarkerOptions()).position(point).draggable(true).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
-			markers.add(marker);
-			
-			if (isOdd(markers.size())) {
-				
-				AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+        if(!session.hasUID()){
+        	registerUser();
+        } else {
 
-				dialog.setTitle("Marquer ce trajet ?");
-				CharSequence[] csitems = new CharSequence[3];
-				csitems[ROUTE_INDEX_FREE] = ROUTE_FREE_STRING;
-				csitems[ROUTE_INDEX_NORMAL] = ROUTE_NORMAL_STRING;
-				csitems[ROUTE_INDEX_FULL] = ROUTE_FULL_STRING;
-				alertType = ROUTE_INDEX_FREE;
-				dialog.setSingleChoiceItems(csitems, ROUTE_INDEX_FREE, new OnClickListener() {
+    		if(map.getCameraPosition().zoom < MIN_ZOOM_LEVEL_FOR_MARKING){
+    			Toast toast = getCustomToast("Zoomez encore " + Math.round(MIN_ZOOM_LEVEL_FOR_MARKING - map.getCameraPosition().zoom) + " fois pour pouvoir marquer des routes");
+    			toast.show();
+    		} else {
 
-					public void onClick(DialogInterface arg0, int pos) {
-						// TODO Auto-generated method stub
-						alertType = pos;
-						Log.i("SELECTED", String.valueOf(alertType));
+    			final LatLng point = position;
+    			Marker marker = map.addMarker((new MarkerOptions()).position(point).draggable(true).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
+    			markers.add(marker);
+    			
+    			if (isOdd(markers.size())) {
+    				
+    				AlertDialog.Builder dialog = new AlertDialog.Builder(this);
 
-					}
-				});
+    				dialog.setTitle("Marquer ce trajet ?");
+    				CharSequence[] csitems = new CharSequence[3];
+    				csitems[ROUTE_INDEX_FREE] = ROUTE_FREE_STRING;
+    				csitems[ROUTE_INDEX_NORMAL] = ROUTE_NORMAL_STRING;
+    				csitems[ROUTE_INDEX_FULL] = ROUTE_FULL_STRING;
+    				alertType = ROUTE_INDEX_FREE;
+    				dialog.setSingleChoiceItems(csitems, ROUTE_INDEX_FREE, new OnClickListener() {
 
-				dialog.setPositiveButton(android.R.string.ok,
-						new OnClickListener() {
-							public void onClick(DialogInterface dialog, int which) {
+    					public void onClick(DialogInterface arg0, int pos) {
+    						// TODO Auto-generated method stub
+    						alertType = pos;
+    						Log.i("SELECTED", String.valueOf(alertType));
 
-								final EditText inputInfos = new EditText(MapActivity.this);
-								final AlertDialog buildInfos = new AlertDialog.Builder(MapActivity.this)
-								.setTitle("Description du trajet")
-								.setMessage("Message")
-								.setView(inputInfos)
-								.setCancelable(false)
-								.setPositiveButton(android.R.string.ok, new OnClickListener() {
+    					}
+    				});
 
-									@Override
-									public void onClick(DialogInterface dialog, int which) {
-										// TODO Auto-generated method stub
-										infosDesc = inputInfos.getText().toString();
-										Log.i("DESC", infosDesc);
-										ArrayList<LatLng> last2LatLng = drawBetween2LastPoints(getAlertColor(alertType), "title", infosDesc);
-										Log.i("AVLAST", String.valueOf(last2LatLng.get(0)));
-										Log.i("LAST", String.valueOf(last2LatLng.get(1)));
-										String lat1st = String.valueOf(last2LatLng.get(0).latitude);
-										String lng1st = String.valueOf(last2LatLng.get(0).longitude);
-										String lat2nd = String.valueOf(last2LatLng.get(1).latitude);
-										String lng2nd = String.valueOf(last2LatLng.get(1).longitude);
-										String usern = session.getUsername();
-										String descroute = infosDesc ;
-										String[] arrayDatas = {lat1st, lng1st, lat2nd, lng2nd, usern, descroute};
-			                            //sendRouteDatas(lat1st, lng1st, lat2nd, lng2nd, usern, descroute);
-										new sendRouteDatasTask().execute(arrayDatas);
+    				dialog.setPositiveButton(android.R.string.ok,
+    						new OnClickListener() {
+    							public void onClick(DialogInterface dialog, int which) {
 
-									}
-								})
-								.create();
-								inputInfos.addTextChangedListener(new TextWatcher(){
+    								final EditText inputInfos = new EditText(MapActivity.this);
+    								final AlertDialog buildInfos = new AlertDialog.Builder(MapActivity.this)
+    								.setTitle("Description du trajet")
+    								.setMessage("Message")
+    								.setView(inputInfos)
+    								.setCancelable(false)
+    								.setPositiveButton(android.R.string.ok, new OnClickListener() {
 
-									@Override
-									public void afterTextChanged(Editable s) {
-										// TODO Auto-generated method stub
-									  if(s.toString().length() == 0){
-											buildInfos.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(false);
-										}
-									  else{
-										  buildInfos.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(true);
-									  }
-									}
+    									@Override
+    									public void onClick(DialogInterface dialog, int which) {
+    										// TODO Auto-generated method stub
+    										infosDesc = inputInfos.getText().toString();
+    										Log.i("DESC", infosDesc);
+    										ArrayList<LatLng> last2LatLng = drawBetween2LastPoints(getAlertColor(alertType), "title", infosDesc);
+    										Log.i("AVLAST", String.valueOf(last2LatLng.get(0)));
+    										Log.i("LAST", String.valueOf(last2LatLng.get(1)));
+    										String lat1st = String.valueOf(last2LatLng.get(0).latitude);
+    										String lng1st = String.valueOf(last2LatLng.get(0).longitude);
+    										String lat2nd = String.valueOf(last2LatLng.get(1).latitude);
+    										String lng2nd = String.valueOf(last2LatLng.get(1).longitude);
+    										String usern = session.getUsername();
+    										String descroute = infosDesc ;
+    										String[] arrayDatas = {lat1st, lng1st, lat2nd, lng2nd, usern, descroute};
+    			                            //sendRouteDatas(lat1st, lng1st, lat2nd, lng2nd, usern, descroute);
+    										new sendRouteDatasTask().execute(arrayDatas);
 
-									@Override
-									public void beforeTextChanged(CharSequence s, int start,int count, int after) {}
+    									}
+    								})
+    								.create();
+    								inputInfos.addTextChangedListener(new TextWatcher(){
 
-									@Override
-									public void onTextChanged(CharSequence s,int start, int before, int count) {}
+    									@Override
+    									public void afterTextChanged(Editable s) {
+    										// TODO Auto-generated method stub
+    									  if(s.toString().length() == 0){
+    											buildInfos.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(false);
+    										}
+    									  else{
+    										  buildInfos.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(true);
+    									  }
+    									}
 
-								});
+    									@Override
+    									public void beforeTextChanged(CharSequence s, int start,int count, int after) {}
 
-								buildInfos.show();
-								buildInfos.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+    									@Override
+    									public void onTextChanged(CharSequence s,int start, int before, int count) {}
+
+    								});
+
+    								buildInfos.show();
+    								buildInfos.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
 
 
-							}
-						});
-				dialog.setNegativeButton(android.R.string.cancel,
-						new OnClickListener() {
+    							}
+    						});
+    				dialog.setNegativeButton(android.R.string.cancel,
+    						new OnClickListener() {
 
-							public void onClick(DialogInterface dialog, int which) {
-								// on enleve le dernier marker
-								int removeIndex = markers.size() - 1;
-								Marker removeMarker = markers.get(removeIndex); // get the marker
-								removeMarker.remove(); // remove the marker
-								markers.remove(removeIndex); // remove the index
-							}
-						});
-				dialog.create().show();
-			}
-		}
+    							public void onClick(DialogInterface dialog, int which) {
+    								// on enleve le dernier marker
+    								int removeIndex = markers.size() - 1;
+    								Marker removeMarker = markers.get(removeIndex); // get the marker
+    								removeMarker.remove(); // remove the marker
+    								markers.remove(removeIndex); // remove the index
+    							}
+    						});
+    				dialog.create().show();
+    			}
+    		}
+        }
 	}
 	
 	private class sendRouteDatasTask extends AsyncTask<String, Void, Void> {
