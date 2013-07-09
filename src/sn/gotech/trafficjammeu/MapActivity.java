@@ -4,12 +4,20 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.http.NameValuePair;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONObject;
 
 import android.app.ActionBar;
@@ -30,6 +38,8 @@ import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -77,7 +87,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 	private static final int ROUTE_FREE_COLOR = Color.GREEN;
 	private static final int ROUTE_NORMAL_COLOR = Color.YELLOW;
 	private static final int ROUTE_FULL_COLOR = Color.RED;
-	private String infosDesc = "";
+	private String infosDesc = "Aucune description";
 	private GoogleMap map;
 	private UiSettings mapSettings;
 	private ArrayList<Marker> markers;
@@ -86,6 +96,8 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 	private ArrayList<Polyline> polylines;
 	private int alertType;
 	private LatLng myPos;
+	private ImageView deleteMarker;
+	private LocationManager locationManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -111,6 +123,9 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
     protected void onStop() {
     	// TODO Auto-generated method stub
     	super.onStop();
+    	if(locationManager != null) {
+    		locationManager.removeUpdates(this);
+    	}
     }
 
 	public void showNoConnectionDialog(final Activity activity) {
@@ -316,6 +331,9 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 	        map.setOnCameraChangeListener(this);
 	        
 			mReturn = true;
+			
+			// marker deleter on drag
+			deleteMarker = (ImageView) findViewById(R.id.deleteMarker);
 		}
 		return mReturn;
 	}
@@ -332,7 +350,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
  
         } else { // Google Play Services are available
  
-            LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+            locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
  
             Criteria criteria = new Criteria();
  
@@ -344,7 +362,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 				myPos = new LatLng(location.getLatitude(), location.getLongitude());
 			}
 			
-            locationManager.requestLocationUpdates(provider, 20000, 0, this);
+            locationManager.requestLocationUpdates(provider, 30000, 0, this);
         }
 	}
 	
@@ -461,32 +479,61 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 				dialog.setPositiveButton(android.R.string.ok,
 						new OnClickListener() {
 							public void onClick(DialogInterface dialog, int which) {
-								
-								
-								AlertDialog.Builder buildInfos = new AlertDialog.Builder(MapActivity.this);
-								buildInfos.setTitle("Description du trajet");
+
 								final EditText inputInfos = new EditText(MapActivity.this);
-								buildInfos.setView(inputInfos);
-								buildInfos.setPositiveButton(android.R.string.ok, new OnClickListener() {
-									
+								final AlertDialog buildInfos = new AlertDialog.Builder(MapActivity.this)
+								.setTitle("Description du trajet")
+								.setMessage("Message")
+								.setView(inputInfos)
+								.setCancelable(false)
+								.setPositiveButton(android.R.string.ok, new OnClickListener() {
+
 									@Override
 									public void onClick(DialogInterface dialog, int which) {
 										// TODO Auto-generated method stub
-										
 										infosDesc = inputInfos.getText().toString();
 										Log.i("DESC", infosDesc);
-										drawBetween2LastPoints(getAlertColor(alertType), "title", infosDesc);
+										ArrayList<LatLng> last2LatLng = drawBetween2LastPoints(getAlertColor(alertType), "title", infosDesc);
+										Log.i("AVLAST", String.valueOf(last2LatLng.get(0)));
+										Log.i("LAST", String.valueOf(last2LatLng.get(1)));
+										String lat1st = String.valueOf(last2LatLng.get(0).latitude);
+										String lng1st = String.valueOf(last2LatLng.get(0).longitude);
+										String lat2nd = String.valueOf(last2LatLng.get(1).latitude);
+										String lng2nd = String.valueOf(last2LatLng.get(1).longitude);
+										String usern = session.getUsername();
+										String descroute = infosDesc ;
+										String[] arrayDatas = {lat1st, lng1st, lat2nd, lng2nd, usern, descroute};
+			                            //sendRouteDatas(lat1st, lng1st, lat2nd, lng2nd, usern, descroute);
+										new sendRouteDatasTask().execute(arrayDatas);
+
 									}
+								})
+								.create();
+								inputInfos.addTextChangedListener(new TextWatcher(){
+
+									@Override
+									public void afterTextChanged(Editable s) {
+										// TODO Auto-generated method stub
+									  if(s.toString().length() == 0){
+											buildInfos.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(false);
+										}
+									  else{
+										  buildInfos.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(true);
+									  }
+									}
+
+									@Override
+									public void beforeTextChanged(CharSequence s, int start,int count, int after) {}
+
+									@Override
+									public void onTextChanged(CharSequence s,int start, int before, int count) {}
+
 								});
-								
-								AlertDialog buildInfosDialog = buildInfos.create();
-								buildInfosDialog.show();
-								if(infosDesc.isEmpty()){
-									buildInfosDialog.getButton(Dialog.BUTTON_POSITIVE).setEnabled(false);
-								}
-								
-								
-								
+
+								buildInfos.show();
+								buildInfos.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+
+
 							}
 						});
 				dialog.setNegativeButton(android.R.string.cancel,
@@ -505,6 +552,44 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		}
 	}
 	
+	private class sendRouteDatasTask extends AsyncTask<String, Void, Void> {
+
+		@Override
+		protected Void doInBackground(String... params) {
+			// TODO Auto-generated method stub
+			sendRouteDatas(params[0], params[1], params[2], params[3], params[4], params[5]);
+			return null;
+		}
+
+	}
+
+	public void sendRouteDatas(String lat1st, String lng1st, String lat2nd, String lng2nd, String user, String desc){
+
+		List<NameValuePair> values = new ArrayList<NameValuePair>();
+		values.add(new BasicNameValuePair("lat1st", lat1st));
+		values.add(new BasicNameValuePair("lng1st", lng1st));
+		values.add(new BasicNameValuePair("lat2nd", lat2nd));
+		values.add(new BasicNameValuePair("lng2nd", lng2nd));
+		values.add(new BasicNameValuePair("desc", desc));
+		values.add(new BasicNameValuePair("user", user));
+		HttpClient client = new DefaultHttpClient();
+		HttpPost post = new HttpPost("http://usmandiaye.legtux.org/android/json.php");
+		try {
+			post.setEntity(new UrlEncodedFormEntity(values));
+			client.execute(post);
+			Log.i("POSTMSG", "POSTED");
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ClientProtocolException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	public int getAlertColor(int index) {
 		switch (index) {
 		case ROUTE_INDEX_FREE:
@@ -519,15 +604,22 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		}
 	}
 	
-	public void drawBetween2LastPoints(int color, String title, String snippet){
+	public ArrayList<LatLng> drawBetween2LastPoints(int color, String title, String snippet){
 		
 		Marker aMarker = markers.get(markers.size() - 2);
 		Marker bMarker = markers.get(markers.size() - 1);
+		ArrayList<LatLng> last2markers = new ArrayList<LatLng>();
+		last2markers.add(aMarker.getPosition());
+		last2markers.add(bMarker.getPosition());
 		
-		aMarker.setTitle("A: " + title);
+		if(aMarker.getTitle() != null && bMarker.getTitle() != null){
+			if(aMarker.getTitle().startsWith("A:") || bMarker.getTitle().startsWith("B:") ){
+				aMarker.setTitle("A: " + title);
+				bMarker.setTitle("B: " + title);
+			}
+		}
+		
 		aMarker.setSnippet(snippet);
-		aMarker.setIcon(BitmapDescriptorFactory.defaultMarker());
-		bMarker.setTitle("B: " + title);
 		bMarker.setSnippet(snippet);
 		
 		switch (color) {
@@ -554,6 +646,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		String url = getDirectionsUrl(origin, dest);
 		DownloadTask downloadTask = new DownloadTask(color);
 		downloadTask.execute(url);
+		return last2markers;
 	}
 	
 public void drawBetween2Points(int color, Marker aMarker, Marker bMarker){
@@ -743,7 +836,6 @@ public void drawBetween2Points(int color, Marker aMarker, Marker bMarker){
 				if(lineOptions != null){
 					Polyline polyline = map.addPolyline(lineOptions);
 					polylines.add(polyline);
-					Toast.makeText(MapActivity.this, "polyline size: "+polylines.size(), Toast.LENGTH_LONG).show();
 				}
 			}
 		}
@@ -752,13 +844,13 @@ public void drawBetween2Points(int color, Marker aMarker, Marker bMarker){
 	@Override
 	public void onLocationChanged(Location location) {
 		// TODO Auto-generated method stub
-        double latitude = location.getLatitude();
-        double longitude = location.getLongitude();
-
-        LatLng latLng = new LatLng(latitude, longitude);
- 
-        map.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-        map.animateCamera(CameraUpdateFactory.zoomTo(session.getZoomSize()));
+//        double latitude = location.getLatitude();
+//        double longitude = location.getLongitude();
+//
+//        LatLng latLng = new LatLng(latitude, longitude);
+// 
+//        map.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+//        map.animateCamera(CameraUpdateFactory.zoomTo(session.getZoomSize()));
 	}
 
 	@Override
@@ -789,23 +881,41 @@ public void drawBetween2Points(int color, Marker aMarker, Marker bMarker){
 	@Override
 	public void onMarkerDragEnd(Marker marker) {
 		// TODO Auto-generated method stub
-		ImageView deleteMarker = (ImageView) findViewById(R.id.deleteMarker);
+		LatLng markerLocation = marker.getPosition();
+		LatLng mapCenter = map.getCameraPosition().target;
 		
-		deleteMarker.setVisibility(View.GONE);
-		
+		float[] results = new float[1];
+		Location.distanceBetween(markerLocation.latitude, markerLocation.longitude,
+				mapCenter.latitude, mapCenter.longitude, results);
+		 
 		int index = markers.indexOf(marker);
-		if(isOdd(index)){ // mean that its a even number (1, 3, 4, ...)
-			drawBetween2Points(getAlertColor(alertType), marker, markers.get(index+1));
+		if(results[0] / 1000 < 0.3){
+			
+			if(!isOdd(index)){
+				if(markers.size() > (index)){
+					markers.get(index - 1).setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
+				}
+			}
+			marker.remove();
+			markers.remove(index);
+			
 		} else {
-			drawBetween2LastPoints(getAlertColor(alertType), marker.getTitle(), marker.getSnippet());
+			if(isOdd(index)){ // mean that its a even number (1, 3, 4, ...)
+				if(markers.size() > index+1) {
+					drawBetween2Points(getAlertColor(alertType), marker, markers.get(index+1));
+				}
+			} else {
+				drawBetween2LastPoints(getAlertColor(alertType), marker.getTitle(), marker.getSnippet());
+			}
 		}
+
+		deleteMarker.setVisibility(View.GONE);
 	} 
 	
 	@Override
 	public void onMarkerDragStart(Marker marker) {
 		// TODO Auto-generated method stub
-		findViewById(R.id.deleteMarker).setVisibility(View.VISIBLE);
-		
+		deleteMarker.setVisibility(View.VISIBLE);
 		int index = markers.indexOf(marker);
 				
 		if(isOdd(index)){ // mean that its a even number (1, 3, 4, ...)
