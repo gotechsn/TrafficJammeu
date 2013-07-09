@@ -612,10 +612,14 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		last2markers.add(aMarker.getPosition());
 		last2markers.add(bMarker.getPosition());
 		
+		// if title is already set, use it directly, otherwise prefix titles by A and B depending on marker orders
 		if(aMarker.getTitle() != null && bMarker.getTitle() != null){
 			if(aMarker.getTitle().startsWith("A:") || bMarker.getTitle().startsWith("B:") ){
 				aMarker.setTitle("A: " + title);
 				bMarker.setTitle("B: " + title);
+			} else {
+				aMarker.setTitle(title);
+				bMarker.setTitle(title);
 			}
 		}
 		
