@@ -11,19 +11,24 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
@@ -83,10 +88,12 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 	private static final int ROUTE_INDEX_FULL = 2;
 	private static final String ROUTE_FREE_STRING = "Libre";
 	private static final String ROUTE_NORMAL_STRING = "Normal";
-	private static final String ROUTE_FULL_STRING = "EmbouteillÈ";
+	private static final String ROUTE_FULL_STRING = "Embouteillé";
 	private static final int ROUTE_FREE_COLOR = Color.GREEN;
 	private static final int ROUTE_NORMAL_COLOR = Color.YELLOW;
 	private static final int ROUTE_FULL_COLOR = Color.RED;
+	private final String URL_TO_PHP_FILE = "http://usmandiaye.legtux.org/android/json.php"; 
+	private final String URL_TO_JSON_FILE = "http://usmandiaye.legtux.org/android/routes.json"; 
 	private String infosDesc = "Aucune description";
 	private GoogleMap map;
 	private UiSettings mapSettings;
@@ -126,8 +133,8 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 	public void showNoConnectionDialog(final Activity activity) {
 
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder.setTitle("Etes vous connectÈ ?");
-		builder.setMessage("Veuillez vÈrifier votre connexion internet. L'activation du GPS facilitera votre localisation dans l'application.");
+		builder.setTitle("Etes vous connecté ?");
+		builder.setMessage("Veuillez vérifier votre connexion internet. L'activation du GPS facilitera votre localisation dans l'application.");
 		builder.setNegativeButton("Wifi",
 				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int which) {
@@ -135,7 +142,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 								Settings.ACTION_WIFI_SETTINGS)); 
 					}
 				});
-		builder.setNeutralButton("Data",
+		builder.setNeutralButton("Données mobiles",
 				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int which) {
 						activity.startActivity(new Intent(
@@ -162,6 +169,129 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 	}
 	
     public void downloadData(){
+    	String [] params = {URL_TO_JSON_FILE};
+    	new downloadDataTask().execute(params[0]);
+    }
+    
+    private class downloadDataTask extends AsyncTask<String, Void, ArrayList<Route>>{
+
+		
+    	ProgressDialog pdialog;
+    	@Override
+		protected void onPostExecute(ArrayList<Route> listRoute) {
+			// TODO Auto-generated method stub
+    		Marker firstMarker;
+			Marker secondMarker;
+			LatLng firstLatLng;
+			LatLng secondLatLng;
+			String desc;
+			String user;
+			boolean draggable;
+			int j = 0;
+    		super.onPostExecute(listRoute);
+			while(j < listRoute.size()){
+				
+				desc = listRoute.get(j).getDesc();
+				user = listRoute.get(j).getUser();
+				firstLatLng = listRoute.get(j).getFirstLatLng();
+				secondLatLng = listRoute.get(j).getSecondLatLng();
+				draggable = listRoute.get(j).isDraggable();
+				firstMarker = map.addMarker(createMarkerOptions("A:", desc+" par:"+user, firstLatLng, draggable));
+				markers.add(firstMarker);
+				secondMarker = map.addMarker(createMarkerOptions("B:", desc+" par:"+user, secondLatLng, draggable));
+				markers.add(secondMarker);
+				drawBetween2Points(getAlertColor(listRoute.get(j).getTypealert()), firstMarker, secondMarker);
+				j++;
+			}
+			pdialog.dismiss();
+		}
+
+		@Override
+		protected void onPreExecute() {
+			// TODO Auto-generated method stub
+			super.onPreExecute();
+			pdialog = new ProgressDialog(MapActivity.this);
+			pdialog.setMessage("Chargement des routes...");
+			pdialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+			pdialog.setCancelable(false);
+			pdialog.show();
+		}
+
+		@Override
+		protected ArrayList<Route> doInBackground(String... params) {
+			// TODO Auto-generated method stub
+			
+			InputStream is = null;
+			BufferedReader bufreader = null;
+			StringBuilder sb = new StringBuilder();
+			String result = "";
+			String line = null;
+			String url = params[0];
+			HttpClient client = new DefaultHttpClient();
+			HttpGet get = new HttpGet(url);
+			
+			try {
+				HttpResponse response = client.execute(get);
+				is = response.getEntity().getContent();
+			} catch (ClientProtocolException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			try {
+				bufreader = new BufferedReader(new InputStreamReader(is,"UTF-8"));
+			} catch (UnsupportedEncodingException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			try {
+				while((line = bufreader.readLine()) != null){
+					sb.append(line + "\n");
+				}
+				is.close();
+				result = sb.toString();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			JSONObject jObj;
+			JSONArray jsnar; //getting json master array
+			JSONObject jsubObj; //getting json sub object
+			int taille;
+			int i = 0;
+			LatLng firstLatLng;
+			LatLng secondLatLng;
+			int typealert;
+			boolean draggable;
+			String user;
+			String desc;
+			ArrayList<Route> listRoute = new ArrayList<Route>();
+			
+			try {
+				jObj = new JSONObject(result);
+				jsnar = jObj.getJSONArray("routes");
+				taille = jsnar.length();
+				while (i < taille) {                            //loop to get json sub objects which content datas
+					jsubObj = jsnar.getJSONObject(i);
+					user = jsubObj.getString("user");
+					desc = jsubObj.getString("desc");
+					draggable = (jsubObj.getString("user")==session.getUsername());
+					firstLatLng = new LatLng(jsubObj.getDouble("lat1st"), jsubObj.getDouble("lng1st"));
+					secondLatLng = new LatLng(jsubObj.getDouble("lat2nd"), jsubObj.getDouble("lng2nd"));
+					typealert = jsubObj.getInt("typealert");
+					listRoute.add(new Route(firstLatLng, secondLatLng, typealert, desc, user, draggable));
+					i++;
+				}
+			} catch (JSONException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return listRoute;
+		}
     	
     }
     
@@ -502,8 +632,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
     										String lng2nd = String.valueOf(last2LatLng.get(1).longitude);
     										String usern = session.getUsername();
     										String descroute = infosDesc ;
-    										String[] arrayDatas = {lat1st, lng1st, lat2nd, lng2nd, usern, descroute};
-    			                            //sendRouteDatas(lat1st, lng1st, lat2nd, lng2nd, usern, descroute);
+    										String[] arrayDatas = {String.valueOf(alertType), lat1st, lng1st, lat2nd, lng2nd, usern, descroute};
     										new sendRouteDatasTask().execute(arrayDatas);
 
     									}
@@ -558,15 +687,16 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		@Override
 		protected Void doInBackground(String... params) {
 			// TODO Auto-generated method stub
-			sendRouteDatas(params[0], params[1], params[2], params[3], params[4], params[5]);
+			sendRouteDatas(params[0], params[1], params[2], params[3], params[4], params[5], params[6]);
 			return null;
 		}
 
 	}
 
-	public void sendRouteDatas(String lat1st, String lng1st, String lat2nd, String lng2nd, String user, String desc){
+	public void sendRouteDatas(String typealert, String lat1st, String lng1st, String lat2nd, String lng2nd, String user, String desc){
 
 		List<NameValuePair> values = new ArrayList<NameValuePair>();
+		values.add(new BasicNameValuePair("typealert", typealert));
 		values.add(new BasicNameValuePair("lat1st", lat1st));
 		values.add(new BasicNameValuePair("lng1st", lng1st));
 		values.add(new BasicNameValuePair("lat2nd", lat2nd));
@@ -574,11 +704,10 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		values.add(new BasicNameValuePair("user", user));
 		values.add(new BasicNameValuePair("desc", desc));
 		HttpClient client = new DefaultHttpClient();
-		HttpPost post = new HttpPost("http://usmandiaye.legtux.org/android/json.php");
+		HttpPost post = new HttpPost(URL_TO_PHP_FILE);
 		try {
 			post.setEntity(new UrlEncodedFormEntity(values));
 			client.execute(post);
-			Log.i("POSTMSG", "POSTED");
 		} catch (UnsupportedEncodingException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
