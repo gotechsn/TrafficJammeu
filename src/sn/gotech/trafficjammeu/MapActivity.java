@@ -704,8 +704,8 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		values.add(new BasicNameValuePair("lng1st", lng1st));
 		values.add(new BasicNameValuePair("lat2nd", lat2nd));
 		values.add(new BasicNameValuePair("lng2nd", lng2nd));
-		values.add(new BasicNameValuePair("user", user));
 		values.add(new BasicNameValuePair("desc", desc));
+		values.add(new BasicNameValuePair("user", user));
 		HttpClient client = new DefaultHttpClient();
 		HttpPost post = new HttpPost(URL_TO_PHP_FILE);
 		try {
