@@ -9,22 +9,19 @@ public class Route {
 	private int typealert;
 	private String desc;
 	private String user;
-	private boolean draggable;
 	
 	
 	
-	public boolean isDraggable() {
-		return draggable;
-	}
+	
 	public Route(LatLng firstLatLng, LatLng secondLatLng, int typelert,
-			String desc, String user, boolean draggable) {
+			String desc, String user) {
 		super();
 		this.firstLatLng = firstLatLng;
 		this.secondLatLng = secondLatLng;
 		this.typealert = typelert;
 		this.desc = desc;
 		this.user = user;
-		this.draggable = draggable;
+		
 	}
 	public LatLng getFirstLatLng() {
 		return firstLatLng;

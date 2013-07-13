@@ -195,7 +195,10 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 				user = listRoute.get(j).getUser();
 				firstLatLng = listRoute.get(j).getFirstLatLng();
 				secondLatLng = listRoute.get(j).getSecondLatLng();
-				draggable = listRoute.get(j).isDraggable();
+				draggable = (user.equals(session.getUsername()))?true:false;
+				Log.i("DRAGABLE", String.valueOf(draggable));
+				Log.i("USER", user);
+				Log.i("SSIONUSERNAME", session.getUsername());
 				firstMarker = map.addMarker(createMarkerOptions("A:", desc+" par:"+user, firstLatLng, draggable));
 				markers.add(firstMarker);
 				secondMarker = map.addMarker(createMarkerOptions("B:", desc+" par:"+user, secondLatLng, draggable));
@@ -266,7 +269,6 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 			LatLng firstLatLng;
 			LatLng secondLatLng;
 			int typealert;
-			boolean draggable;
 			String user;
 			String desc;
 			ArrayList<Route> listRoute = new ArrayList<Route>();
@@ -279,11 +281,10 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 					jsubObj = jsnar.getJSONObject(i);
 					user = jsubObj.getString("user");
 					desc = jsubObj.getString("desc");
-					draggable = (jsubObj.getString("user")==session.getUsername());
 					firstLatLng = new LatLng(jsubObj.getDouble("lat1st"), jsubObj.getDouble("lng1st"));
 					secondLatLng = new LatLng(jsubObj.getDouble("lat2nd"), jsubObj.getDouble("lng2nd"));
 					typealert = jsubObj.getInt("typealert");
-					listRoute.add(new Route(firstLatLng, secondLatLng, typealert, desc, user, draggable));
+					listRoute.add(new Route(firstLatLng, secondLatLng, typealert, desc, user));
 					i++;
 				}
 			} catch (JSONException e) {
@@ -342,6 +343,11 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 			break;
 		case R.id.action_mode_text:
 			loadModeText();
+			break;
+		case R.id.action_refresh:
+			map.clear();
+			markers.clear();
+			downloadData();
 			break;
 		default:
 			break;
