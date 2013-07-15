@@ -82,7 +82,7 @@ import com.google.android.gms.maps.model.PolylineOptions;
 public class MapActivity extends Activity implements OnMapLongClickListener, LocationListener, OnMarkerDragListener, OnCameraChangeListener{
 
 	private static final String MAP_VIEW_TYPE_SELECTED = "map_type_selected";
-	private static final float MIN_ZOOM_LEVEL_FOR_MARKING = 13.0f;
+	private static final float MIN_ZOOM_LEVEL_FOR_MARKING = 17.0f;
 	private static final int ROUTE_INDEX_FREE = 0;
 	private static final int ROUTE_INDEX_NORMAL = 1;
 	private static final int ROUTE_INDEX_FULL = 2;
@@ -196,9 +196,6 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 				firstLatLng = listRoute.get(j).getFirstLatLng();
 				secondLatLng = listRoute.get(j).getSecondLatLng();
 				draggable = (user.equals(session.getUsername()))?true:false;
-				Log.i("DRAGABLE", String.valueOf(draggable));
-				Log.i("USER", user);
-				Log.i("SSIONUSERNAME", session.getUsername());
 				firstMarker = map.addMarker(createMarkerOptions("A:", desc+" par:"+user, firstLatLng, draggable));
 				markers.add(firstMarker);
 				secondMarker = map.addMarker(createMarkerOptions("B:", desc+" par:"+user, secondLatLng, draggable));

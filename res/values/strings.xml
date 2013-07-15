@@ -2,10 +2,8 @@
 <resources>
 
     <string name="app_name">Traffic Jammeu</string>
-    <string name="ouw">Ousmane est vraiment nul!</string>
     <string name="action_settings">Settings</string>
     <string name="hello_world">Hello world!</string>
-    <string name="soul">Soul est vraiment nul!</string>
     <string name="title_section1">Section 1</string>
     <string name="title_section2">Section 2</string>
     <string name="title_section3">Section 3</string>
@@ -26,4 +24,11 @@
 	<string name="save">Enregistrer</string>
 	<string name="title">Infos utilisateur</string>
 	<string name="ccm">Comment ça marche ?</string>
+	<string name="tuto">
+	    Vous devez poser deux marqueurs pour dessiner une route \n
+	    1. Faites un appui long sur la carte pour poser un premier marquer \n
+	    2. Repetez l\'appui long pour déposer un deuxième marquer \n
+	    3. Entrez les informations demandées \n
+	    4. Pour supprimer un marqueur, faites un appui long sur le marqueur et le déposer sur la corbeille
+	</string>
 </resources>
