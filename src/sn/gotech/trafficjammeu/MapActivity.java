@@ -213,9 +213,9 @@ public class MapActivity extends SherlockFragmentActivity implements android.loc
 				firstLatLng = listRoute.get(j).getFirstLatLng();
 				secondLatLng = listRoute.get(j).getSecondLatLng();
 				draggable = (user.equals(session.getUsername()))?true:false;
-				firstMarker = map.addMarker(createMarkerOptions("A:", desc+" par:"+user, firstLatLng, draggable));
+				firstMarker = map.addMarker(createMarkerOptions("A:", desc+" par "+user.toUpperCase(), firstLatLng, draggable));
 				markers.add(firstMarker);
-				secondMarker = map.addMarker(createMarkerOptions("B:", desc+" par:"+user, secondLatLng, draggable));
+				secondMarker = map.addMarker(createMarkerOptions("B:", desc+" par "+user.toUpperCase(), secondLatLng, draggable));
 				markers.add(secondMarker);
 				drawBetween2Points(getAlertColor(listRoute.get(j).getTypealert()), firstMarker, secondMarker);
 				j++;
@@ -345,6 +345,8 @@ public class MapActivity extends SherlockFragmentActivity implements android.loc
 		actionBar.setDisplayHomeAsUpEnabled(false);
     	return super.onCreateOptionsMenu(menu);
     }
+    
+   
     
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
