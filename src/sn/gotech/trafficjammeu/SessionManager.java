@@ -32,6 +32,8 @@ public class SessionManager {
 	private static final String KEY_NAME = "name";
 	private static final String KEY_USERNAME = "username";
 	private static final String KEY_EMAIL = "email";
+	private static final String DATA_VERSION = "version";
+	private static final String JSON = "json_data";
     private static String IS_SESSION_ACTIVED = "is_session_active";
     private static int PRIVATE_MODE = 0;
 
@@ -143,6 +145,26 @@ public class SessionManager {
     
     public void setAnimeToLng(String lng) {
     	editor.putString(KEY_ANIME_TO_LNG, lng);
+    	editor.commit();
+    }
+
+    public int getVersion() {
+    	return pref.getInt(DATA_VERSION, -1);
+    }
+    
+    public void setVersion(int i){
+    	editor = pref.edit();
+    	editor.putInt(DATA_VERSION, i);
+    	editor.commit();
+    }
+
+    public String getJSON() {
+    	return pref.getString(JSON, null);
+    }
+    
+    public void setJSON(String json){
+    	editor = pref.edit();
+    	editor.putString(JSON, json);
     	editor.commit();
     }
 }

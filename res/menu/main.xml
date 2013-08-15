@@ -1,5 +1,13 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
 
+   
+    <item
+        android:icon="@drawable/ic_map"
+        android:id="@+id/action_change_view"
+        android:showAsAction="ifRoom|withText"
+        android:title="@string/changeMapType"
+        />
+    
     <item
         android:icon="@drawable/ic_menu_refresh"
         android:id="@+id/action_refresh"
@@ -11,13 +19,6 @@
         android:id="@+id/action_mode_text"
         android:showAsAction="ifRoom|withText"
         android:title="@string/listMode"
-        />
-   
-    <item
-        android:icon="@drawable/ic_map"
-        android:id="@+id/action_change_view"
-        android:showAsAction="ifRoom|withText"
-        android:title="@string/changeMapType"
         />
     
     <item

@@ -163,15 +163,21 @@ public class MapActivity extends SherlockFragmentActivity implements android.loc
 		builder.show();
 	}
 	
-	public boolean isConnected() {
+	public boolean isConnected(boolean withToast) {
 		ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo ni = cm.getActiveNetworkInfo();
 		if (ni == null) {
-		    Toast.makeText(getApplicationContext(), "Veuillez verifier votre connexion internet.", Toast.LENGTH_LONG).show();
+		    if(withToast) {
+		    	Toast.makeText(getApplicationContext(), "Veuillez verifier votre connexion internet.", Toast.LENGTH_LONG).show();
+		    }
 		    return false;
 		} else {
 			return ni.isConnected();
 		}
+	}
+	
+	public boolean isConnected() {
+		return isConnected(true);
 	}
 	
     public void downloadData(){
@@ -182,9 +188,9 @@ public class MapActivity extends SherlockFragmentActivity implements android.loc
     }
     
     private class downloadDataTask extends AsyncTask<String, Void, ArrayList<Route>>{
-
 		
     	ProgressDialog pdialog;
+		private ArrayList<Route> listRoute;
     	@Override
 		protected void onPostExecute(ArrayList<Route> listRoute) {
 			// TODO Auto-generated method stub
@@ -198,7 +204,6 @@ public class MapActivity extends SherlockFragmentActivity implements android.loc
 			int j = 0;
     		super.onPostExecute(listRoute);
 			while(j < listRoute.size()){
-				
 				desc = listRoute.get(j).getDesc();
 				user = listRoute.get(j).getUser();
 				firstLatLng = listRoute.get(j).getFirstLatLng();
@@ -219,82 +224,89 @@ public class MapActivity extends SherlockFragmentActivity implements android.loc
 			// TODO Auto-generated method stub
 			super.onPreExecute();
 			pdialog = new ProgressDialog(MapActivity.this);
-			pdialog.setMessage("Chargement des routes...");
+			pdialog.setMessage("Chargement des informations, patientez ...");
 			pdialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
 			pdialog.setCancelable(false);
 			pdialog.show();
+			listRoute = new ArrayList<Route>();
 		}
 
 		@Override
 		protected ArrayList<Route> doInBackground(String... params) {
 			// TODO Auto-generated method stub
-			
-			InputStream is = null;
-			BufferedReader bufreader = null;
-			StringBuilder sb = new StringBuilder();
 			String result = "";
-			String line = null;
-			String url = params[0];
-			HttpClient client = new DefaultHttpClient();
-			HttpGet get = new HttpGet(url);
-			
-			try {
-				HttpResponse response = client.execute(get);
-				is = response.getEntity().getContent();
-			} catch (ClientProtocolException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			
-			try {
-				bufreader = new BufferedReader(new InputStreamReader(is,"UTF-8"));
-			} catch (UnsupportedEncodingException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
-			try {
-				while((line = bufreader.readLine()) != null){
-					sb.append(line + "\n");
+			if(isConnected(false)){
+				InputStream is = null;
+				BufferedReader bufreader = null;
+				StringBuilder sb = new StringBuilder();
+				String line = null;
+				String url = params[0];
+				HttpClient client = new DefaultHttpClient();
+				HttpGet get = new HttpGet(url);
+				
+				try {
+					HttpResponse response = client.execute(get);
+					is = response.getEntity().getContent();
+				} catch (ClientProtocolException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
-				is.close();
-				result = sb.toString();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				
+				try {
+					bufreader = new BufferedReader(new InputStreamReader(is,"UTF-8"));
+				} catch (UnsupportedEncodingException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				try {
+					while((line = bufreader.readLine()) != null){
+						sb.append(line + "\n");
+					}
+					is.close();
+					result = sb.toString();
+					session.setJSON(result);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+					
+			} else {
+				result = session.getJSON();
 			}
 			
-			JSONObject jObj;
-			JSONArray jsnar; //getting json master array
-			JSONObject jsubObj; //getting json sub object
-			int taille;
-			int i = 0;
-			LatLng firstLatLng;
-			LatLng secondLatLng;
-			int typealert;
-			String user;
-			String desc;
-			ArrayList<Route> listRoute = new ArrayList<Route>();
-			
-			try {
-				jObj = new JSONObject(result);
-				jsnar = jObj.getJSONArray("routes");
-				taille = jsnar.length();
-				while (i < taille) {                            //loop to get json sub objects which content datas
-					jsubObj = jsnar.getJSONObject(i);
-					user = jsubObj.getString("user");
-					desc = jsubObj.getString("desc");
-					firstLatLng = new LatLng(jsubObj.getDouble("lat1st"), jsubObj.getDouble("lng1st"));
-					secondLatLng = new LatLng(jsubObj.getDouble("lat2nd"), jsubObj.getDouble("lng2nd"));
-					typealert = jsubObj.getInt("typealert");
-					listRoute.add(new Route(firstLatLng, secondLatLng, typealert, desc, user));
-					i++;
-				}
-			} catch (JSONException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			if(!result.isEmpty()) {
+				JSONObject jObj;
+				JSONArray jsnar; //getting json master array
+				JSONObject jsubObj; //getting json sub object
+				int taille;
+				int i = 0;
+				LatLng firstLatLng;
+				LatLng secondLatLng;
+				int typealert;
+				String user;
+				String desc;
+				
+				try {
+					jObj = new JSONObject(result);
+					jsnar = jObj.getJSONArray("routes");
+					taille = jsnar.length();
+					while (i < taille) {                            //loop to get json sub objects which content datas
+						jsubObj = jsnar.getJSONObject(i);
+						user = jsubObj.getString("user");
+						desc = jsubObj.getString("desc");
+						firstLatLng = new LatLng(jsubObj.getDouble("lat1st"), jsubObj.getDouble("lng1st"));
+						secondLatLng = new LatLng(jsubObj.getDouble("lat2nd"), jsubObj.getDouble("lng2nd"));
+						typealert = jsubObj.getInt("typealert");
+						listRoute.add(new Route(firstLatLng, secondLatLng, typealert, desc, user));
+						i++;
+					}
+				} catch (JSONException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}	
 			}
 			return listRoute;
 		}
@@ -345,9 +357,11 @@ public class MapActivity extends SherlockFragmentActivity implements android.loc
 		case R.id.action_change_view:
 			changeMapType();
 			break;
+			
 		case R.id.action_mode_text:
 			loadModeText();
 			break;
+			
 		case R.id.action_refresh:
 			if(isConnected()){
 				map.clear();
@@ -622,9 +636,10 @@ public class MapActivity extends SherlockFragmentActivity implements android.loc
     							public void onClick(DialogInterface dialog, int which) {
 
     								final EditText inputInfos = new EditText(MapActivity.this);
+    								inputInfos.setHint(R.string.alertMessageHint);
     								final AlertDialog buildInfos = new AlertDialog.Builder(MapActivity.this)
-    								.setTitle("Description du trajet")
-    								.setMessage("Message")
+    								.setTitle(R.string.alertDescTitle)
+    								.setMessage(null)
     								.setView(inputInfos)
     								.setCancelable(false)
     								.setPositiveButton(android.R.string.ok, new OnClickListener() {
@@ -644,8 +659,9 @@ public class MapActivity extends SherlockFragmentActivity implements android.loc
     										String usern = session.getUsername();
     										String descroute = infosDesc ;
     										String[] arrayDatas = {String.valueOf(alertType), lat1st, lng1st, lat2nd, lng2nd, usern, descroute};
-    										new sendRouteDatasTask().execute(arrayDatas);
-
+    										if(isConnected()){
+    											new sendRouteDatasTask().execute(arrayDatas);
+    										}
     									}
     								})
     								.create();
@@ -694,12 +710,26 @@ public class MapActivity extends SherlockFragmentActivity implements android.loc
 	}
 	
 	private class sendRouteDatasTask extends AsyncTask<String, Void, Void> {
-
+		ProgressDialog pd;
+		@Override
+		protected void onPreExecute() {
+			// TODO Auto-generated method stub
+			super.onPreExecute();
+			pd = ProgressDialog.show(getApplicationContext(), null, "Patientez ...");
+		}
+		
 		@Override
 		protected Void doInBackground(String... params) {
 			// TODO Auto-generated method stub
 			sendRouteDatas(params[0], params[1], params[2], params[3], params[4], params[5], params[6]);
 			return null;
+		}
+		
+		@Override
+		protected void onPostExecute(Void result) {
+			// TODO Auto-generated method stub
+			super.onPostExecute(result);
+			pd.dismiss();
 		}
 
 	}
@@ -989,13 +1019,13 @@ public void drawBetween2Points(int color, Marker aMarker, Marker bMarker){
 	@Override
 	public void onLocationChanged(Location location) {
 		// TODO Auto-generated method stub
-//        double latitude = location.getLatitude();
-//        double longitude = location.getLongitude();
-//
-//        LatLng latLng = new LatLng(latitude, longitude);
-// 
-//        map.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-//        map.animateCamera(CameraUpdateFactory.zoomTo(session.getZoomSize()));
+        double latitude = location.getLatitude();
+        double longitude = location.getLongitude();
+        LatLng latLng = new LatLng(latitude, longitude);
+        if(map != null) {
+        	map.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+            map.animateCamera(CameraUpdateFactory.zoomTo(session.getZoomSize()));
+        }
 	}
 
 	@Override
