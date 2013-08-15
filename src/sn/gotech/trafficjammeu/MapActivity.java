@@ -110,7 +110,7 @@ public class MapActivity extends SherlockFragmentActivity implements android.loc
         setContentView(R.layout.map_fragment); 
         session = new SessionManager(getApplicationContext());
 		manageTuto();
-		if (true /*isNetworkAvailable() */) {
+		if (isConnected()) {
 			setupInterface();
 			downloadData();
 			configureMap();
