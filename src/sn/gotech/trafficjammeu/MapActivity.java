@@ -78,7 +78,7 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 public class MapActivity extends SherlockFragmentActivity implements android.location.LocationListener, OnMapLongClickListener, OnMarkerDragListener, OnCameraChangeListener {
-
+ 
 	private static final String MAP_VIEW_TYPE_SELECTED = "map_type_selected";
 	private static final float MIN_ZOOM_LEVEL_FOR_MARKING = 17.0f;
 	private static final int ROUTE_INDEX_FREE = 0;
