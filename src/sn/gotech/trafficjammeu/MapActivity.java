@@ -176,7 +176,9 @@ public class MapActivity extends SherlockFragmentActivity implements android.loc
 	
     public void downloadData(){
     	String [] params = {URL_TO_JSON_FILE};
-    	new downloadDataTask().execute(params[0]);
+    	if(isConnected()) {
+    		new downloadDataTask().execute(params[0]);
+    	}
     }
     
     private class downloadDataTask extends AsyncTask<String, Void, ArrayList<Route>>{
@@ -296,7 +298,6 @@ public class MapActivity extends SherlockFragmentActivity implements android.loc
 			}
 			return listRoute;
 		}
-    	
     }
     
 	@Override
@@ -348,9 +349,11 @@ public class MapActivity extends SherlockFragmentActivity implements android.loc
 			loadModeText();
 			break;
 		case R.id.action_refresh:
-			map.clear();
-			markers.clear();
-			downloadData();
+			if(isConnected()){
+				map.clear();
+				markers.clear();
+				downloadData();
+			}
 			break;
 		default:
 			break;
