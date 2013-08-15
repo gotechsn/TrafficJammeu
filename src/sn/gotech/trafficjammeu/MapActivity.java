@@ -203,6 +203,10 @@ public class MapActivity extends SherlockFragmentActivity implements android.loc
 			boolean draggable;
 			int j = 0;
     		super.onPostExecute(listRoute);
+    		if(listRoute.size() != 0) {
+    			map.clear();
+    			markers.clear();
+    		}
 			while(j < listRoute.size()){
 				desc = listRoute.get(j).getDesc();
 				user = listRoute.get(j).getUser();
@@ -364,8 +368,6 @@ public class MapActivity extends SherlockFragmentActivity implements android.loc
 			
 		case R.id.action_refresh:
 			if(isConnected()){
-				map.clear();
-				markers.clear();
 				downloadData();
 			}
 			break;
