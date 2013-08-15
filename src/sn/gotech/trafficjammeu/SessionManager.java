@@ -80,8 +80,8 @@ public class SessionManager {
     }
     
 
-    public void setZoomSize(int size) {
-    	editor.putInt(KEY_ZOOM_SIZE, size);
+    public void setZoomSize(float size) {
+    	editor.putFloat(KEY_ZOOM_SIZE, size);
     	editor.commit();
     }
     

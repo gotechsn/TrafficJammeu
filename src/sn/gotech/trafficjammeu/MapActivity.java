@@ -24,7 +24,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -36,7 +35,6 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.location.Criteria;
 import android.location.Location;
-import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -48,9 +46,6 @@ import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -61,6 +56,11 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.actionbarsherlock.app.ActionBar;
+import com.actionbarsherlock.app.SherlockFragmentActivity;
+import com.actionbarsherlock.view.Menu;
+import com.actionbarsherlock.view.MenuInflater;
+import com.actionbarsherlock.view.MenuItem;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -68,7 +68,6 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.GoogleMap.OnCameraChangeListener;
 import com.google.android.gms.maps.GoogleMap.OnMapLongClickListener;
 import com.google.android.gms.maps.GoogleMap.OnMarkerDragListener;
-import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
@@ -78,8 +77,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
-
-public class MapActivity extends Activity implements OnMapLongClickListener, LocationListener, OnMarkerDragListener, OnCameraChangeListener{
+public class MapActivity extends SherlockFragmentActivity implements android.location.LocationListener, OnMapLongClickListener, OnMarkerDragListener, OnCameraChangeListener {
 
 	private static final String MAP_VIEW_TYPE_SELECTED = "map_type_selected";
 	private static final float MIN_ZOOM_LEVEL_FOR_MARKING = 17.0f;
@@ -88,7 +86,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 	private static final int ROUTE_INDEX_FULL = 2;
 	private static final String ROUTE_FREE_STRING = "Libre";
 	private static final String ROUTE_NORMAL_STRING = "Normal";
-	private static final String ROUTE_FULL_STRING = "Embouteillé";
+	private static final String ROUTE_FULL_STRING = "Embouteill√©";
 	private static final int ROUTE_FREE_COLOR = Color.GREEN;
 	private static final int ROUTE_NORMAL_COLOR = Color.YELLOW;
 	private static final int ROUTE_FULL_COLOR = Color.RED;
@@ -112,7 +110,8 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
         setContentView(R.layout.map_fragment); 
         session = new SessionManager(getApplicationContext());
 		manageTuto();
-		if (isNetworkAvailable()) {
+		if (true /*isNetworkAvailable() */) {
+			setupInterface();
 			downloadData();
 			configureMap();
 			manageLocation();
@@ -121,7 +120,12 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		}
     }
     
-    @Override
+    private void setupInterface() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
     protected void onStop() {
     	// TODO Auto-generated method stub
     	super.onStop();
@@ -133,23 +137,22 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 	public void showNoConnectionDialog(final Activity activity) {
 
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder.setTitle("Etes vous connecté ?");
-		builder.setMessage("Veuillez vérifier votre connexion internet. L'activation du GPS facilitera votre localisation dans l'application.");
-		builder.setNegativeButton("Wifi",
+		builder.setTitle("Etes vous connect√© ?");
+		builder.setMessage("Veuillez v√©rifier votre connexion internet. L'activation du GPS facilitera votre localisation dans l'application.");
+		builder.setPositiveButton("Wifi",
 				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int which) {
 						activity.startActivity(new Intent(
 								Settings.ACTION_WIFI_SETTINGS)); 
 					}
 				});
-		builder.setNeutralButton("Données mobiles",
+		builder.setNegativeButton("Quitter",
 				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int which) {
-						activity.startActivity(new Intent(
-								Settings.ACTION_NETWORK_OPERATOR_SETTINGS)); 
+						activity.finish(); 
 					}
 				});
-		builder.setPositiveButton("GPS", new DialogInterface.OnClickListener() {
+		builder.setNeutralButton("GPS", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
 				activity.startActivity(new Intent(
 						Settings.ACTION_LOCATION_SOURCE_SETTINGS));
@@ -160,12 +163,15 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
 		builder.show();
 	}
 	
-	public boolean isNetworkAvailable() {
-		ConnectivityManager connectivityManager = (ConnectivityManager) this
-				.getSystemService(Context.CONNECTIVITY_SERVICE);
-		NetworkInfo activeNetworkInfo = connectivityManager
-				.getActiveNetworkInfo();
-		return activeNetworkInfo != null && activeNetworkInfo.isConnectedOrConnecting();
+	public boolean isConnected() {
+		ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo ni = cm.getActiveNetworkInfo();
+		if (ni == null) {
+		    Toast.makeText(getApplicationContext(), "Veuillez verifier votre connexion internet.", Toast.LENGTH_LONG).show();
+		    return false;
+		} else {
+			return ni.isConnected();
+		}
 	}
 	
     public void downloadData(){
@@ -315,11 +321,11 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
     	// TODO Auto-generated method stub
-		MenuInflater inflater = getMenuInflater();
+		MenuInflater inflater = getSupportMenuInflater();
 		inflater.inflate(R.menu.main, menu);
 		
-		ActionBar actionBar = getActionBar();
-		actionBar.setDisplayHomeAsUpEnabled(true);
+		ActionBar actionBar = getSupportActionBar();
+		actionBar.setDisplayHomeAsUpEnabled(false);
     	return super.onCreateOptionsMenu(menu);
     }
     
@@ -354,8 +360,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
     
     private void loadModeText() {
 		// TODO Auto-generated method stub
-    	Toast.makeText(this, "MODE TEXT", Toast.LENGTH_LONG).show();
-    	
+    	Toast.makeText(this, "En developpement !", Toast.LENGTH_LONG).show();
 	}
 
 	public void changeMapType(){
@@ -434,7 +439,7 @@ public class MapActivity extends Activity implements OnMapLongClickListener, Loc
     
 	public boolean configureMap() {
 		
-		map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
+		map = ((TransparentSupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
 		markers = new ArrayList<Marker>();
 		polylines = new ArrayList<Polyline>();
 		
@@ -1026,7 +1031,7 @@ public void drawBetween2Points(int color, Marker aMarker, Marker bMarker){
 				mapCenter.latitude, mapCenter.longitude, results);
 		 
 		int index = markers.indexOf(marker);
-		if(results[0] / 1000 < 0.3){
+		if(results[0] / 1000 < (0.05 /*/ map.getCameraPosition().zoom + 0.1 * map.getCameraPosition().zoom)*/ )){
 			
 			if(!isOdd(index)){
 				if(markers.size() > (index)){
@@ -1073,7 +1078,10 @@ public void drawBetween2Points(int color, Marker aMarker, Marker bMarker){
 		// TODO Auto-generated method stub
 		session.setAnimeToLat(""+position.target.latitude);
 		session.setAnimeToLng(""+position.target.longitude);
-	}   
+		if(map != null){
+			session.setZoomSize(map.getCameraPosition().zoom);
+		}
+	}
 		
 	public boolean isEmailValid(CharSequence email) {
 	   return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches();

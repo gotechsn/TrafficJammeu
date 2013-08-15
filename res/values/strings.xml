@@ -9,9 +9,9 @@
     <string name="title_section3">Section 3</string>
     <string name="fermer">Fermer</string>
     <string name="rafraichir">Rafraichir</string>
-    <string name="listeText">Mode Text</string>
+    <string name="listMode">Mode Liste</string>
      <string name="infos">Informations</string>
-    <string name="changeMapType">Changer de type de vue</string>
+    <string name="changeMapType">Changer de carte</string>
     <string name="doNotShowAgain">Ne plus afficher cette page</string>
 	<string name="mapTypeNormal">Vue Plan</string>
 	<string name="mapTypeSatellite">Vue Satellite</string>
