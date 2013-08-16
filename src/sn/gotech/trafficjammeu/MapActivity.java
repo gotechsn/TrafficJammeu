@@ -10,6 +10,8 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -103,12 +105,14 @@ public class MapActivity extends SherlockFragmentActivity implements android.loc
 	private LatLng myPos;
 	private ImageView deleteMarker;
 	private LocationManager locationManager;
+	public static DataSource dataSource;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.map_fragment); 
         session = new SessionManager(getApplicationContext());
+        dataSource = new DataSource(getApplicationContext());
 		manageTuto();
 		if (isConnected()) {
 			setupInterface();
@@ -201,24 +205,23 @@ public class MapActivity extends SherlockFragmentActivity implements android.loc
 			String desc;
 			String user;
 			boolean draggable;
-			int j = 0;
     		super.onPostExecute(listRoute);
     		if(listRoute.size() != 0) {
     			map.clear();
     			markers.clear();
     		}
-			while(j < listRoute.size()){
+			for (int j = 0; j < listRoute.size(); j++) {
+				listRoute.get(j).save(getApplicationContext());
 				desc = listRoute.get(j).getDesc();
 				user = listRoute.get(j).getUser();
 				firstLatLng = listRoute.get(j).getFirstLatLng();
 				secondLatLng = listRoute.get(j).getSecondLatLng();
 				draggable = (user.equals(session.getUsername()))?true:false;
-				firstMarker = map.addMarker(createMarkerOptions("A:", desc+" par "+user.toUpperCase(), firstLatLng, draggable));
+				firstMarker = map.addMarker(createMarkerOptions("A:", desc+" par "+user.toUpperCase(Locale.FRANCE), firstLatLng, draggable));
 				markers.add(firstMarker);
-				secondMarker = map.addMarker(createMarkerOptions("B:", desc+" par "+user.toUpperCase(), secondLatLng, draggable));
+				secondMarker = map.addMarker(createMarkerOptions("B:", desc+" par "+user.toUpperCase(Locale.FRANCE), secondLatLng, draggable));
 				markers.add(secondMarker);
 				drawBetween2Points(getAlertColor(listRoute.get(j).getTypealert()), firstMarker, secondMarker);
-				j++;
 			}
 			pdialog.dismiss();
 		}
@@ -228,7 +231,7 @@ public class MapActivity extends SherlockFragmentActivity implements android.loc
 			// TODO Auto-generated method stub
 			super.onPreExecute();
 			pdialog = new ProgressDialog(MapActivity.this);
-			pdialog.setMessage("Chargement des informations, patientez ...");
+			pdialog.setMessage("Chargement des données ...");
 			pdialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
 			pdialog.setCancelable(false);
 			pdialog.show();
@@ -292,6 +295,7 @@ public class MapActivity extends SherlockFragmentActivity implements android.loc
 				int typealert;
 				String user;
 				String desc;
+				String routeId;
 				
 				try {
 					jObj = new JSONObject(result);
@@ -304,7 +308,8 @@ public class MapActivity extends SherlockFragmentActivity implements android.loc
 						firstLatLng = new LatLng(jsubObj.getDouble("lat1st"), jsubObj.getDouble("lng1st"));
 						secondLatLng = new LatLng(jsubObj.getDouble("lat2nd"), jsubObj.getDouble("lng2nd"));
 						typealert = jsubObj.getInt("typealert");
-						listRoute.add(new Route(firstLatLng, secondLatLng, typealert, desc, user));
+						routeId = UUID.randomUUID().toString();
+						listRoute.add(new Route(firstLatLng, secondLatLng, typealert, desc, routeId, user));
 						i++;
 					}
 				} catch (JSONException e) {
@@ -900,9 +905,7 @@ public void drawBetween2Points(int color, Marker aMarker, Marker bMarker){
                 while( ( line = br.readLine())  != null){
                         sb.append(line);
                 }
-                
                 data = sb.toString();
-
                 br.close();
 
         }catch(Exception e){
@@ -1122,5 +1125,14 @@ public void drawBetween2Points(int color, Marker aMarker, Marker bMarker){
 		
 	public boolean isEmailValid(CharSequence email) {
 	   return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches();
+	}
+	
+	private class PersistRoutes extends AsyncTask<Void, Void, Void> {
+		@Override
+		protected Void doInBackground(Void... params) {
+			// TODO Auto-generated method stub
+			
+			return null;
+		}
 	}
 }
